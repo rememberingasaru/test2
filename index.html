@@ -3,19 +3,52 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PP Chat GPT - Interactive Viewer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Premium PDF Reader</title>
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=Outfit:wght@300;400;500&display=swap"
+        rel="stylesheet">
+    <!-- PDF.js Text Layer CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf_viewer.min.css">
 
     <style>
         :root {
+            /* Theme Variables - Default (Dark) */
             --bg-color: #0f172a;
             --text-color: #e2e8f0;
+            --ui-bg: rgba(15, 23, 42, 0.9);
+            --ui-border: rgba(255, 255, 255, 0.1);
             --accent-color: #38bdf8;
-            --page-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --page-bg: #ffffff;
+            --shadow-color: rgba(0, 0, 0, 0.5);
+        }
+
+        [data-theme="light"] {
+            --bg-color: #f1f5f9;
+            --text-color: #1e293b;
+            --ui-bg: rgba(255, 255, 255, 0.9);
+            --ui-border: rgba(0, 0, 0, 0.1);
+            --accent-color: #2563eb;
+            --page-bg: #ffffff;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+        }
+
+        [data-theme="sepia"] {
+            --bg-color: #f4ecd8;
+            --text-color: #433422;
+            --ui-bg: rgba(244, 236, 216, 0.9);
+            --ui-border: rgba(67, 52, 34, 0.1);
+            --accent-color: #d97706;
+            --page-bg: #fdf6e3;
+            --shadow-color: rgba(67, 52, 34, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
         }
 
         body {
@@ -25,22 +58,175 @@
             color: var(--text-color);
             font-family: 'Outfit', sans-serif;
             overflow: hidden;
-            /* Prevent scrolling, let the book handle it */
+            height: 100vh;
+            width: 100vw;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        /* UI Controls */
+        .ui-bar {
+            position: fixed;
+            z-index: 1000;
+            background: var(--ui-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--ui-border);
+            padding: 0.5rem 1rem;
             display: flex;
-            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+            transition: transform 0.3s ease;
+        }
+
+        .top-bar {
+            top: 0;
+            left: 0;
+            right: 0;
+            justify-content: space-between;
+            border-bottom-width: 1px;
+            border-top: none;
+            border-left: none;
+            border-right: none;
+        }
+
+        .bottom-bar {
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-radius: 50px;
+            justify-content: center;
+            min-width: 300px;
+            box-shadow: 0 10px 25px var(--shadow-color);
+        }
+
+        .btn {
+            background: transparent;
+            border: none;
+            color: var(--text-color);
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 6px;
+            display: flex;
             align-items: center;
             justify-content: center;
-            height: 100vh;
-            user-select: none;
-            /* Prevent text selection */
-            -webkit-user-select: none;
+            transition: all 0.2s;
         }
 
-        /* Disable context menu */
-        body {
-            -webkit-touch-callout: none;
+        .btn:hover {
+            background: rgba(128, 128, 128, 0.1);
+            color: var(--accent-color);
         }
 
+        .btn svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+
+        /* Slider */
+        .scrubber-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 4px;
+            background: var(--ui-border);
+            border-radius: 2px;
+            appearance: none;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            background: var(--accent-color);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        /* Main Content Area */
+        #app-container {
+            width: 100%;
+            height: 100%;
+            padding-top: 60px;
+            /* Space for top bar */
+            padding-bottom: 80px;
+            /* Space for bottom bar */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Flipbook Styles */
+        .flip-book {
+            display: none;
+            box-shadow: 0 20px 50px var(--shadow-color);
+        }
+
+        /* Scroll View Styles (Mobile) */
+        .scroll-view {
+            display: none;
+            width: 100%;
+            height: 100%;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 20px;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            scroll-behavior: smooth;
+        }
+
+        .scroll-page {
+            background: var(--page-bg);
+            box-shadow: 0 4px 6px var(--shadow-color);
+            margin-bottom: 20px;
+            position: relative;
+            max-width: 100%;
+        }
+
+        /* Page Content & Text Layer */
+        .page-wrapper {
+            background-color: var(--page-bg);
+            position: relative;
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        /* Text Layer Adjustments */
+        .textLayer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            overflow: hidden;
+            opacity: 0.2;
+            /* Make text selection visible but subtle */
+            line-height: 1.0;
+            transform-origin: 0 0;
+        }
+
+        .textLayer ::selection {
+            background: var(--accent-color);
+            color: transparent;
+        }
+
+        /* Loading Spinner */
         #loader {
             position: fixed;
             top: 0;
@@ -52,17 +238,17 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            z-index: 1000;
-            transition: opacity 0.5s ease;
+            z-index: 2000;
+            transition: opacity 0.5s;
         }
 
         .spinner {
-            width: 50px;
-            height: 50px;
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(128, 128, 128, 0.3);
             border-top-color: var(--accent-color);
-            animation: spin 1s ease-in-out infinite;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
             margin-bottom: 1rem;
         }
 
@@ -72,122 +258,130 @@
             }
         }
 
-        .container {
-            width: 100%;
-            height: 100%;
+        /* Responsive Logic */
+        body.mode-scroll #app-container {
+            align-items: flex-start;
+        }
+
+        body.mode-scroll .scroll-view {
             display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-            box-sizing: border-box;
         }
 
-        /* The Book Container */
-        .flip-book {
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
-            display: none;
-            /* Hidden until loaded */
+        body.mode-flip .flip-book {
+            display: block;
         }
 
-        .page {
-            background-color: white;
-            overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+        /* Hide scrollbar for cleaner look */
+        .scroll-view::-webkit-scrollbar {
+            width: 8px;
         }
 
-        .page-content {
-            width: 100%;
-            height: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        canvas {
-            max-width: 100%;
-            max-height: 100%;
-            object-fit: contain;
-            box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.05);
-            /* Inner shadow for depth */
-        }
-
-        /* Navigation Controls */
-        .controls {
-            position: fixed;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            gap: 20px;
-            z-index: 100;
-            background: rgba(15, 23, 42, 0.8);
-            padding: 10px 20px;
-            border-radius: 30px;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            opacity: 0;
-            transition: opacity 0.5s;
-        }
-
-        .controls.visible {
-            opacity: 1;
-        }
-
-        .btn {
+        .scroll-view::-webkit-scrollbar-track {
             background: transparent;
-            border: none;
-            color: white;
-            cursor: pointer;
-            font-size: 1.2rem;
-            padding: 5px 10px;
-            transition: color 0.2s;
-            font-family: 'Outfit', sans-serif;
         }
 
-        .btn:hover {
-            color: var(--accent-color);
+        .scroll-view::-webkit-scrollbar-thumb {
+            background: rgba(128, 128, 128, 0.3);
+            border-radius: 4px;
         }
 
-        .btn:disabled {
-            color: #475569;
-            cursor: not-allowed;
+        /* Theme Menu */
+        .theme-menu {
+            position: absolute;
+            top: 60px;
+            right: 20px;
+            background: var(--ui-bg);
+            border: 1px solid var(--ui-border);
+            border-radius: 8px;
+            padding: 10px;
+            display: none;
+            flex-direction: column;
+            gap: 5px;
+            backdrop-filter: blur(10px);
         }
 
-        .page-info {
-            color: #94a3b8;
-            font-size: 0.9rem;
+        .theme-menu.active {
             display: flex;
-            align-items: center;
         }
 
-        /* Mobile adjustments */
-        @media (max-width: 768px) {
-            .container {
-                padding: 10px;
-            }
+        .theme-option {
+            padding: 8px 16px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+
+        .theme-option:hover {
+            background: rgba(128, 128, 128, 0.1);
+        }
+
+        .theme-option.active {
+            background: var(--accent-color);
+            color: white;
         }
     </style>
 </head>
 
-<body oncontextmenu="return false;"> <!-- Disable Right Click -->
+<body class="mode-flip" data-theme="dark">
 
     <div id="loader">
         <div class="spinner"></div>
-        <p>Loading Experience...</p>
+        <p>Loading Book...</p>
     </div>
 
-    <div class="container">
-        <div id="book" class="flip-book">
-            <!-- Pages will be injected here -->
+    <!-- Top Bar -->
+    <div class="ui-bar top-bar">
+        <div style="font-weight: 600; font-size: 1.1rem;">PP Chat GPT</div>
+        <div style="display: flex; gap: 10px;">
+            <button class="btn" id="themeBtn" title="Change Theme">
+                <svg viewBox="0 0 24 24">
+                    <path
+                        d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-2.98 0-5.4-2.42-5.4-5.4 0-1.81.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z" />
+                </svg>
+            </button>
+            <button class="btn" id="fullscreenBtn" title="Toggle Fullscreen">
+                <svg viewBox="0 0 24 24">
+                    <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z" />
+                </svg>
+            </button>
         </div>
     </div>
 
-    <div class="controls" id="controls">
-        <button class="btn" id="prevBtn">←</button>
-        <span class="page-info" id="pageInfo">Page 1</span>
-        <button class="btn" id="nextBtn">→</button>
+    <!-- Theme Menu -->
+    <div class="theme-menu" id="themeMenu">
+        <div class="theme-option" onclick="setTheme('light')">Light</div>
+        <div class="theme-option" onclick="setTheme('sepia')">Sepia</div>
+        <div class="theme-option" onclick="setTheme('dark')">Dark</div>
+    </div>
+
+    <!-- Main App -->
+    <div id="app-container">
+        <!-- Flipbook Container -->
+        <div id="book" class="flip-book"></div>
+
+        <!-- Scroll View Container -->
+        <div id="scrollView" class="scroll-view"></div>
+    </div>
+
+    <!-- Bottom Controls -->
+    <div class="ui-bar bottom-bar">
+        <button class="btn" id="prevBtn">
+            <svg viewBox="0 0 24 24">
+                <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
+            </svg>
+        </button>
+
+        <div class="scrubber-container">
+            <span id="pageCurrent" style="font-size: 0.9rem; min-width: 20px; text-align: center;">1</span>
+            <input type="range" id="pageSlider" min="1" max="100" value="1">
+            <span id="pageTotal" style="font-size: 0.9rem; min-width: 20px; text-align: center;">--</span>
+        </div>
+
+        <button class="btn" id="nextBtn">
+            <svg viewBox="0 0 24 24">
+                <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" />
+            </svg>
+        </button>
     </div>
 
     <!-- Libraries -->
@@ -195,154 +389,292 @@
     <script src="https://cdn.jsdelivr.net/npm/page-flip/dist/js/page-flip.browser.min.js"></script>
 
     <script>
-        // PDF.js worker
+        // Configuration
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-
         const pdfPath = 'pp_chat_gpt.pdf';
-        const bookElement = document.getElementById('book');
-        const loader = document.getElementById('loader');
-        const controls = document.getElementById('controls');
-        const prevBtn = document.getElementById('prevBtn');
-        const nextBtn = document.getElementById('nextBtn');
-        const pageInfo = document.getElementById('pageInfo');
 
-        let pageFlip;
+        // State
         let pdfDoc = null;
+        let pageFlip = null;
+        let isMobile = window.innerWidth < 768;
+        let currentPage = parseInt(localStorage.getItem('lastPage')) || 1;
+        let totalPages = 0;
+        let isRendering = false;
 
-        // Initialize PageFlip
-        function initBook() {
-            const width = window.innerWidth > 768 ? 550 : window.innerWidth - 40;
-            const height = window.innerHeight > 800 ? 750 : window.innerHeight - 140;
+        // Elements
+        const bookEl = document.getElementById('book');
+        const scrollEl = document.getElementById('scrollView');
+        const loader = document.getElementById('loader');
+        const slider = document.getElementById('pageSlider');
+        const pageCurrentEl = document.getElementById('pageCurrent');
+        const pageTotalEl = document.getElementById('pageTotal');
+        const themeMenu = document.getElementById('themeMenu');
 
-            pageFlip = new St.PageFlip(bookElement, {
-                width: width,
-                height: height,
-                size: 'fixed',
+        // Initialize
+        async function init() {
+            try {
+                // Load PDF
+                pdfDoc = await pdfjsLib.getDocument(pdfPath).promise;
+                totalPages = pdfDoc.numPages;
+
+                // Update UI
+                pageTotalEl.textContent = totalPages;
+                slider.max = totalPages;
+
+                // Restore Theme
+                const savedTheme = localStorage.getItem('theme') || 'dark';
+                setTheme(savedTheme);
+
+                // Render based on device
+                handleResize();
+
+                // Listeners
+                window.addEventListener('resize', debounce(handleResize, 200));
+
+                // Controls
+                document.getElementById('prevBtn').onclick = prevPage;
+                document.getElementById('nextBtn').onclick = nextPage;
+                slider.oninput = (e) => goToPage(parseInt(e.target.value));
+
+                document.getElementById('themeBtn').onclick = (e) => {
+                    e.stopPropagation();
+                    themeMenu.classList.toggle('active');
+                };
+
+                document.getElementById('fullscreenBtn').onclick = toggleFullScreen;
+                document.addEventListener('click', () => themeMenu.classList.remove('active'));
+
+                // Scroll listener for mobile
+                scrollEl.addEventListener('scroll', debounce(handleScroll, 100));
+
+                loader.style.opacity = 0;
+                setTimeout(() => loader.style.display = 'none', 500);
+
+            } catch (err) {
+                console.error(err);
+                loader.innerHTML = `<p style="color:red">Error loading PDF</p>`;
+            }
+        }
+
+        // Mode Switching
+        function handleResize() {
+            const newIsMobile = window.innerWidth < 768;
+
+            // Only re-render if mode changed or first load
+            if (newIsMobile !== isMobile || !pageFlip && !scrollEl.hasChildNodes()) {
+                isMobile = newIsMobile;
+                document.body.className = isMobile ? 'mode-scroll' : 'mode-flip';
+
+                if (isMobile) {
+                    destroyFlipbook();
+                    renderScrollView();
+                } else {
+                    renderFlipbook();
+                }
+            }
+        }
+
+        // Rendering Logic
+        async function createPageContent(pageNum) {
+            const page = await pdfDoc.getPage(pageNum);
+            const viewport = page.getViewport({ scale: isMobile ? 1.5 : 2 }); // Higher scale for desktop
+
+            const wrapper = document.createElement('div');
+            wrapper.className = 'page-wrapper';
+
+            // Canvas
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+
+            // Text Layer
+            const textLayerDiv = document.createElement('div');
+            textLayerDiv.className = 'textLayer';
+            textLayerDiv.style.setProperty('--scale-factor', viewport.scale);
+
+            wrapper.appendChild(canvas);
+            wrapper.appendChild(textLayerDiv);
+
+            // Render
+            const renderContext = {
+                canvasContext: context,
+                viewport: viewport
+            };
+
+            page.render(renderContext).promise.then(() => {
+                // Render Text Layer
+                pdfjsLib.renderTextLayer({
+                    textContentSource: page.streamTextContent(),
+                    container: textLayerDiv,
+                    viewport: viewport,
+                    textDivs: []
+                });
+            });
+
+            return wrapper;
+        }
+
+        // Scroll View Implementation
+        async function renderScrollView() {
+            scrollEl.innerHTML = '';
+
+            for (let i = 1; i <= totalPages; i++) {
+                const pageContainer = document.createElement('div');
+                pageContainer.className = 'scroll-page';
+                pageContainer.id = `page-${i}`;
+
+                // Lazy load logic could go here, but for now render all (or chunks)
+                // For simplicity in this artifact, we'll render all but sequentially
+                const content = await createPageContent(i);
+                pageContainer.appendChild(content);
+                scrollEl.appendChild(pageContainer);
+            }
+
+            // Scroll to saved page
+            setTimeout(() => {
+                const target = document.getElementById(`page-${currentPage}`);
+                if (target) target.scrollIntoView();
+            }, 100);
+        }
+
+        function handleScroll() {
+            if (!isMobile) return;
+
+            // Find visible page
+            const pages = document.querySelectorAll('.scroll-page');
+            for (let page of pages) {
+                const rect = page.getBoundingClientRect();
+                if (rect.top >= 0 && rect.top < window.innerHeight / 2) {
+                    const num = parseInt(page.id.split('-')[1]);
+                    updateState(num);
+                    break;
+                }
+            }
+        }
+
+        // Flipbook Implementation
+        async function renderFlipbook() {
+            if (pageFlip) return; // Already exists
+
+            bookEl.innerHTML = '';
+            const pages = [];
+
+            // Create all page elements first
+            for (let i = 1; i <= totalPages; i++) {
+                const div = document.createElement('div');
+                div.className = 'page';
+                // We will load content into these divs
+                // PageFlip needs them in DOM to init
+                pages.push(div);
+            }
+
+            // Init PageFlip
+            pageFlip = new St.PageFlip(bookEl, {
+                width: 550,
+                height: 750,
+                size: 'stretch',
                 minWidth: 300,
                 maxWidth: 1000,
                 minHeight: 400,
                 maxHeight: 1200,
                 maxShadowOpacity: 0.5,
                 showCover: true,
-                mobileScrollSupport: false // Disable default scroll to handle it ourselves
+                mobileScrollSupport: false
             });
 
+            // Load pages
+            pageFlip.loadFromHTML(pages);
+
+            // Render content into the pages
+            // We do this after loadFromHTML because PageFlip modifies the DOM
+            const pageElements = pageFlip.getFlipController().getPageCollection().getPages();
+
+            for (let i = 0; i < totalPages; i++) {
+                const content = await createPageContent(i + 1);
+                // PageFlip wraps content in a div, we append to the internal container
+                // Actually pageElements[i].getElement() gives the div we passed
+                pageElements[i].getElement().appendChild(content);
+            }
+
+            // Go to saved page
+            if (currentPage > 1) pageFlip.turnToPage(currentPage - 1); // 0-indexed
+
+            // Events
             pageFlip.on('flip', (e) => {
-                updateControls();
+                updateState(e.data + 1); // 0-indexed
             });
         }
 
-        async function renderPage(pageNumber) {
-            const page = await pdfDoc.getPage(pageNumber);
-            const viewport = page.getViewport({ scale: 1.5 }); // Higher scale for better quality
-            
-            const div = document.createElement('div');
-            div.className = 'page';
-            
-            const content = document.createElement('div');
-            content.className = 'page-content';
-            
-            const canvas = document.createElement('canvas');
-            const context = canvas.getContext('2d');
-            
-            // Adjust canvas size for high DPI
-            const outputScale = window.devicePixelRatio || 1;
-            canvas.width = Math.floor(viewport.width * outputScale);
-            canvas.height = Math.floor(viewport.height * outputScale);
-            canvas.style.width = Math.floor(viewport.width) + "px";
-            canvas.style.height = Math.floor(viewport.height) + "px";
-
-            // Scale content to fit the book page size
-            // We want the canvas to fit within the page div
-            // The page div size is determined by PageFlip
-            
-            // Actually, let's just render it and let CSS object-fit handle the display
-            // But we need to make sure the canvas isn't too huge or too small
-            
-            const transform = outputScale !== 1
-                ? [outputScale, 0, 0, outputScale, 0, 0]
-                : null;
-
-            const renderContext = {
-                canvasContext: context,
-                transform: transform,
-                viewport: viewport
-            };
-            
-            await page.render(renderContext).promise;
-            
-            content.appendChild(canvas);
-            div.appendChild(content);
-            return div;
-        }
-
-        async function loadApp() {
-            try {
-                initBook();
-                
-                pdfDoc = await pdfjsLib.getDocument(pdfPath).promise;
-                const totalPages = pdfDoc.numPages;
-                const pages = [];
-
-                for (let i = 1; i <= totalPages; i++) {
-                    const pageDiv = await renderPage(i);
-                    pages.push(pageDiv);
-                    
-                    // Update loader text
-                    loader.querySelector('p').textContent = `Loading Page ${i} of ${totalPages}...`;
-                }
-
-                pageFlip.loadFromHTML(pages);
-                
-                // Hide loader, show book
-                loader.style.opacity = 0;
-                setTimeout(() => {
-                    loader.style.display = 'none';
-                    bookElement.style.display = 'block';
-                    controls.classList.add('visible');
-                    updateControls();
-                }, 500);
-
-            } catch (error) {
-                console.error('Error loading PDF:', error);
-                loader.querySelector('p').textContent = 'Error loading document. Please refresh.';
+        function destroyFlipbook() {
+            if (pageFlip) {
+                pageFlip.destroy();
+                pageFlip = null;
             }
         }
 
-        function updateControls() {
-            if (!pageFlip) return;
-            const current = pageFlip.getCurrentPageIndex() + 1;
-            const total = pageFlip.getPageCount();
-            pageInfo.textContent = `Page ${current} of ${total}`;
-            
-            prevBtn.disabled = current === 1;
-            nextBtn.disabled = current === total;
+        // Navigation
+        function updateState(pageNum) {
+            currentPage = pageNum;
+            pageCurrentEl.textContent = pageNum;
+            slider.value = pageNum;
+            localStorage.setItem('lastPage', pageNum);
         }
 
-        prevBtn.addEventListener('click', () => pageFlip.flipPrev());
-        nextBtn.addEventListener('click', () => pageFlip.flipNext());
+        function goToPage(pageNum) {
+            if (isMobile) {
+                const target = document.getElementById(`page-${pageNum}`);
+                if (target) target.scrollIntoView({ behavior: 'smooth' });
+            } else {
+                if (pageFlip) pageFlip.flip(pageNum - 1);
+            }
+            updateState(pageNum);
+        }
 
-        // Keyboard navigation
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowLeft') pageFlip.flipPrev();
-            if (e.key === 'ArrowRight') pageFlip.flipNext();
-        });
+        function prevPage() {
+            if (currentPage > 1) goToPage(currentPage - 1);
+        }
 
-        // Handle resize
-        let resizeTimeout;
-        window.addEventListener('resize', () => {
-            clearTimeout(resizeTimeout);
-            resizeTimeout = setTimeout(() => {
-                // Ideally we would re-init the book here for new dimensions
-                // For now, a reload is safer to ensure correct sizing
-                // location.reload(); 
-                // Actually, let's try to just update if the library supports it, 
-                // but St.PageFlip is tricky with dynamic resize. 
-                // CSS scaling is often better.
-            }, 200);
-        });
+        function nextPage() {
+            if (currentPage < totalPages) goToPage(currentPage + 1);
+        }
 
-        loadApp();
+        // Theme
+        function setTheme(theme) {
+            document.body.setAttribute('data-theme', theme);
+            localStorage.setItem('theme', theme);
+
+            // Update active state in menu
+            document.querySelectorAll('.theme-option').forEach(el => {
+                el.classList.toggle('active', el.textContent.toLowerCase() === theme);
+            });
+        }
+
+        // Utils
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        // Start
+        init();
     </script>
 </body>
 

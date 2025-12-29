@@ -1,18 +1,24 @@
-# Premium PDF Viewer
+# Premium PDF Reader
 
-This repository hosts a premium, interactive flipping book viewer for the PDF document.
+A high-quality, responsive PDF reader hosted on GitHub Pages.
 
 ## Features
-- **Realistic Flipping Effect**: Powered by `page-flip` for a tactile reading experience.
-- **Responsive Design**: Optimized for both desktop and mobile devices.
-- **Secure**: Download options are disabled to encourage online viewing.
-- **High Performance**: Uses `pdf.js` for sharp, fast rendering.
 
-## File
-- [pp_chat_gpt.pdf](pp_chat_gpt.pdf) (Embedded in the viewer)
+### 📖 Reading Experience
+- **Desktop**: Realistic 3D page-flipping effect.
+- **Mobile**: Seamless vertical scrolling optimized for touch.
+- **Themes**: Switch between Light, Dark, and Sepia modes for comfortable reading.
+- **Typography**: Optimized fonts (Lora & Outfit) for legibility.
+
+### 🧭 Navigation & Control
+- **Smart Navigation**: Scrubber bar to quickly jump through pages.
+- **Persistence**: Automatically remembers the last page you read.
+- **Fullscreen**: Immersive reading mode.
+- **Accessibility**: Selectable text layer for easy copying and screen readers.
+
+### 🔒 Security
+- **Protected**: Direct download buttons removed and context menu disabled.
 
 ## Deployment
-This site is ready to be deployed to GitHub Pages.
-1. Push this repository to GitHub.
-2. Go to Settings > Pages.
-3. Select `main` branch as source.
+1. Push to GitHub.
+2. Enable GitHub Pages (Source: `main` branch).
