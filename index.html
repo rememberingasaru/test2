@@ -258,6 +258,19 @@
             }
         }
 
+        /* Error Message */
+        #error-msg {
+            color: #ef4444;
+            margin-top: 10px;
+            text-align: center;
+            max-width: 80%;
+            font-family: monospace;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 10px;
+            border-radius: 4px;
+            display: none;
+        }
+
         /* Responsive Logic */
         body.mode-scroll #app-container {
             align-items: flex-start;
@@ -327,6 +340,7 @@
     <div id="loader">
         <div class="spinner"></div>
         <p>Loading Book...</p>
+        <div id="error-msg"></div>
     </div>
 
     <!-- Top Bar -->
@@ -386,9 +400,20 @@
 
     <!-- Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <!-- ADDED: PDF Viewer for Text Layer -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf_viewer.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/page-flip/dist/js/page-flip.browser.min.js"></script>
 
     <script>
+        // Global Error Handler
+        window.onerror = function (msg, url, line, col, error) {
+            const errorMsg = document.getElementById('error-msg');
+            errorMsg.style.display = 'block';
+            errorMsg.textContent = `Error: ${msg}`;
+            console.error("Global Error:", error);
+            return false;
+        };
+
         // Configuration
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
         const pdfPath = 'pp_chat_gpt.pdf';
@@ -413,6 +438,9 @@
         // Initialize
         async function init() {
             try {
+                if (typeof pdfjsLib === 'undefined') throw new Error("PDF.js library not loaded");
+                if (typeof St === 'undefined') throw new Error("PageFlip library not loaded");
+
                 // Load PDF
                 pdfDoc = await pdfjsLib.getDocument(pdfPath).promise;
                 totalPages = pdfDoc.numPages;
@@ -426,7 +454,7 @@
                 setTheme(savedTheme);
 
                 // Render based on device
-                handleResize();
+                await handleResize();
 
                 // Listeners
                 window.addEventListener('resize', debounce(handleResize, 200));
@@ -447,17 +475,20 @@
                 // Scroll listener for mobile
                 scrollEl.addEventListener('scroll', debounce(handleScroll, 100));
 
+                // Hide loader only after success
                 loader.style.opacity = 0;
                 setTimeout(() => loader.style.display = 'none', 500);
 
             } catch (err) {
                 console.error(err);
-                loader.innerHTML = `<p style="color:red">Error loading PDF</p>`;
+                const errorMsg = document.getElementById('error-msg');
+                errorMsg.style.display = 'block';
+                errorMsg.textContent = `Failed to load: ${err.message}`;
             }
         }
 
         // Mode Switching
-        function handleResize() {
+        async function handleResize() {
             const newIsMobile = window.innerWidth < 768;
 
             // Only re-render if mode changed or first load
@@ -467,9 +498,9 @@
 
                 if (isMobile) {
                     destroyFlipbook();
-                    renderScrollView();
+                    await renderScrollView();
                 } else {
-                    renderFlipbook();
+                    await renderFlipbook();
                 }
             }
         }
@@ -502,15 +533,24 @@
                 viewport: viewport
             };
 
-            page.render(renderContext).promise.then(() => {
-                // Render Text Layer
-                pdfjsLib.renderTextLayer({
-                    textContentSource: page.streamTextContent(),
-                    container: textLayerDiv,
-                    viewport: viewport,
-                    textDivs: []
-                });
-            });
+            await page.render(renderContext).promise;
+
+            // Safe Text Layer Rendering
+            try {
+                if (typeof pdfjsLib.renderTextLayer !== 'undefined') {
+                    const textContent = await page.getTextContent();
+                    pdfjsLib.renderTextLayer({
+                        textContent: textContent,
+                        container: textLayerDiv,
+                        viewport: viewport,
+                        textDivs: []
+                    });
+                } else {
+                    console.warn("Text Layer rendering not available");
+                }
+            } catch (e) {
+                console.warn("Failed to render text layer:", e);
+            }
 
             return wrapper;
         }
@@ -519,13 +559,13 @@
         async function renderScrollView() {
             scrollEl.innerHTML = '';
 
+            // Render first few pages immediately, then others?
+            // For now, render all to ensure it works
             for (let i = 1; i <= totalPages; i++) {
                 const pageContainer = document.createElement('div');
                 pageContainer.className = 'scroll-page';
                 pageContainer.id = `page-${i}`;
 
-                // Lazy load logic could go here, but for now render all (or chunks)
-                // For simplicity in this artifact, we'll render all but sequentially
                 const content = await createPageContent(i);
                 pageContainer.appendChild(content);
                 scrollEl.appendChild(pageContainer);
@@ -564,8 +604,6 @@
             for (let i = 1; i <= totalPages; i++) {
                 const div = document.createElement('div');
                 div.className = 'page';
-                // We will load content into these divs
-                // PageFlip needs them in DOM to init
                 pages.push(div);
             }
 
@@ -587,13 +625,10 @@
             pageFlip.loadFromHTML(pages);
 
             // Render content into the pages
-            // We do this after loadFromHTML because PageFlip modifies the DOM
             const pageElements = pageFlip.getFlipController().getPageCollection().getPages();
 
             for (let i = 0; i < totalPages; i++) {
                 const content = await createPageContent(i + 1);
-                // PageFlip wraps content in a div, we append to the internal container
-                // Actually pageElements[i].getElement() gives the div we passed
                 pageElements[i].getElement().appendChild(content);
             }
 
