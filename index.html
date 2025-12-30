@@ -127,13 +127,30 @@
             overflow: hidden;
         }
 
-        /* Flipbook */
-        .flip-book {
-            box-shadow: 0 25px 80px var(--shadow-color);
+        /* Turn.js Flipbook */
+        #flipbook {
+            width: 922px;
+            height: 600px;
         }
 
-        .page {
-            background: var(--page-bg) !important;
+        #flipbook .page {
+            width: 461px;
+            height: 600px;
+            background-color: var(--page-bg);
+            background-size: 100% 100%;
+        }
+
+        #flipbook .page canvas {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        /* Turn.js hard cover effect */
+        #flipbook .hard {
+            background: #333 !important;
+            color: white;
+            font-weight: bold;
         }
 
         /* Side Navigation Arrows */
@@ -372,7 +389,7 @@
             display: flex;
         }
 
-        body.mode-scroll .flip-book {
+        body.mode-scroll #flipbook {
             display: none;
         }
 
@@ -448,7 +465,7 @@
 
     <!-- Main Content -->
     <div id="app-container">
-        <div id="book" class="flip-book"></div>
+        <div id="flipbook"></div>
         <div id="scrollView" class="scroll-view"></div>
     </div>
 
@@ -473,7 +490,8 @@
 
     <!-- Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/page-flip/dist/js/page-flip.browser.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/turn.js/3/turn.min.js"></script>
 
     <script>
         // Config
@@ -482,14 +500,13 @@
 
         // State
         let pdfDoc = null;
-        let pageFlip = null;
         let isMobile = window.innerWidth < 768;
         let currentPage = parseInt(localStorage.getItem('lastPage')) || 1;
         let totalPages = 0;
         let zoomLevel = 1;
 
         // Elements
-        const bookEl = document.getElementById('book');
+        const flipbook = $('#flipbook');
         const scrollEl = document.getElementById('scrollView');
         const loader = document.getElementById('loader');
         const slider = document.getElementById('pageSlider');
@@ -501,7 +518,7 @@
         async function init() {
             try {
                 if (typeof pdfjsLib === 'undefined') throw new Error("PDF.js not loaded");
-                if (typeof St === 'undefined') throw new Error("PageFlip not loaded");
+                if (typeof $.fn.turn === 'undefined') throw new Error("Turn.js not loaded");
 
                 pdfDoc = await pdfjsLib.getDocument(pdfPath).promise;
                 totalPages = pdfDoc.numPages;
@@ -571,7 +588,7 @@
         // Mode Switching
         async function handleResize() {
             const newIsMobile = window.innerWidth < 768;
-            if (newIsMobile !== isMobile || (!pageFlip && !scrollEl.hasChildNodes())) {
+            if (newIsMobile !== isMobile || (!flipbook.data().turn && !scrollEl.hasChildNodes())) {
                 isMobile = newIsMobile;
                 document.body.className = isMobile ? 'mode-scroll' : '';
 
@@ -626,48 +643,45 @@
             }
         }
 
-        // Flipbook (Desktop)
+        // Turn.js Flipbook (Desktop)
         async function renderFlipbook() {
-            if (pageFlip) return;
+            if (flipbook.data().turn) return;
 
-            bookEl.innerHTML = '';
-            const pages = [];
+            flipbook.empty();
 
+            // Create pages
             for (let i = 1; i <= totalPages; i++) {
-                const div = document.createElement('div');
-                div.className = 'page';
-                const canvas = await createPageCanvas(i, 2);
-                div.appendChild(canvas);
-                pages.push(div);
+                const pageDiv = $('<div class="page"></div>');
+                const canvas = await createPageCanvas(i, 1.3);
+                pageDiv.append(canvas);
+                flipbook.append(pageDiv);
             }
 
-            pageFlip = new St.PageFlip(bookEl, {
-                width: 550,
-                height: 733,
-                size: 'stretch',
-                minWidth: 300,
-                maxWidth: 1000,
-                minHeight: 400,
-                maxHeight: 1200,
-                maxShadowOpacity: 0.5,
-                showCover: true,
-                mobileScrollSupport: false,
-                clickEventForward: true,
-                useMouseEvents: true
+            // Initialize Turn.js
+            flipbook.turn({
+                width: 922,
+                height: 600,
+                autoCenter: true,
+                display: 'double',
+                acceleration: true,
+                gradients: true,
+                elevation: 50,
+                when: {
+                    turned: function (e, page) {
+                        updateState(page);
+                    }
+                }
             });
 
-            pageFlip.loadFromHTML(pages);
-            if (currentPage > 1) pageFlip.turnToPage(currentPage - 1);
-
-            pageFlip.on('flip', (e) => updateState(e.data + 1));
-
-            bookEl.style.display = 'block';
+            // Go to saved page
+            if (currentPage > 1) {
+                flipbook.turn('page', currentPage);
+            }
         }
 
         function destroyFlipbook() {
-            if (pageFlip) {
-                pageFlip.destroy();
-                pageFlip = null;
+            if (flipbook.data().turn) {
+                flipbook.turn('destroy');
             }
         }
 
@@ -678,12 +692,10 @@
             slider.value = pageNum;
             localStorage.setItem('lastPage', pageNum);
 
-            // Update thumbnail highlight
             document.querySelectorAll('.thumb').forEach(t => {
                 t.classList.toggle('active', parseInt(t.dataset.page) === pageNum);
             });
 
-            // Scroll thumbnail into view
             const activeThumb = thumbScroll.querySelector('.thumb.active');
             if (activeThumb) {
                 activeThumb.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
@@ -696,17 +708,27 @@
                 const target = document.getElementById(`page-${pageNum}`);
                 if (target) target.scrollIntoView({ behavior: 'smooth' });
             } else {
-                if (pageFlip) pageFlip.turnToPage(pageNum - 1);
+                if (flipbook.data().turn) {
+                    flipbook.turn('page', pageNum);
+                }
             }
             updateState(pageNum);
         }
 
         function prevPage() {
-            if (currentPage > 1) goToPage(currentPage - 1);
+            if (isMobile) {
+                if (currentPage > 1) goToPage(currentPage - 1);
+            } else {
+                flipbook.turn('previous');
+            }
         }
 
         function nextPage() {
-            if (currentPage < totalPages) goToPage(currentPage + 1);
+            if (isMobile) {
+                if (currentPage < totalPages) goToPage(currentPage + 1);
+            } else {
+                flipbook.turn('next');
+            }
         }
 
         // Theme
@@ -722,8 +744,7 @@
         // Zoom
         function adjustZoom(delta) {
             zoomLevel = Math.max(0.5, Math.min(2, zoomLevel + delta));
-            // Re-render would be expensive, just apply CSS transform
-            bookEl.style.transform = `scale(${zoomLevel})`;
+            flipbook.css('transform', `scale(${zoomLevel})`);
         }
 
         // Utils
