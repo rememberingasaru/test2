@@ -683,9 +683,6 @@
                 container.className = 'scroll-page';
                 container.id = `page-${i}`;
                 container.dataset.page = i;
-                container.style.height = 'auto';
-                container.style.minHeight = '600px';
-                container.style.overflow = 'hidden';
                 scrollEl.appendChild(container);
                 scrollObserver.observe(container);
             }
@@ -759,15 +756,7 @@
                 }
             });
 
-            flipbook.on('click', function (e) {
-                // Only turn if clicking edges, or simple Logic
-                // For simplicity, left 30% prev, right 30% next?
-                // Or just keep simple left/right split
-                const offset = flipbook.offset();
-                const x = e.pageX - offset.left;
-                if (x < flipbook.width() / 2) flipbook.turn('previous');
-                else flipbook.turn('next');
-            });
+            // Turn.js has built-in navigation - no custom click handler needed
 
             if (currentPage > 1) flipbook.turn('page', currentPage);
             loadNearbyPages(currentPage);
