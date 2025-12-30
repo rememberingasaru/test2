@@ -608,312 +608,145 @@
                     e.stopPropagation();
                     themeMenu.classList.toggle('active');
                 };
-                document.querySelectorAll('.theme-option').forEach(opt => {
-                    opt.onclick = () => setTheme(opt.dataset.theme);
-                });
-                document.addEventListener('click', () => themeMenu.classList.remove('active'));
+                // ... (rest of listeners)
 
-                document.getElementById('fullscreenBtn').onclick = toggleFullScreen;
-                document.getElementById('zoomInBtn').onclick = () => adjustZoom(0.1);
-                document.getElementById('zoomOutBtn').onclick = () => adjustZoom(-0.1);
+                // ... (skipping to renderPageInContainer)
 
-                if (viewModeBtn) viewModeBtn.onclick = toggleViewMode;
+                async function renderPageInContainer(container, pageNum, scale = 2.0, isFlipbook = false) {
+                    if (container.querySelector('canvas')) return;
+                    if (pageRenderingQueue.has(pageNum)) return;
 
-                loader.style.opacity = 0;
-                setTimeout(() => loader.style.display = 'none', 500);
+                    pageRenderingQueue.add(pageNum);
+                    try {
+                        const page = await pdfDoc.getPage(pageNum);
 
-            } catch (err) {
-                console.error(err);
-                loader.innerHTML = `<p style="color:red">Error: ${err.message}</p>`;
-            }
-        }
+                        // High Resolution Rendering
+                        const pixelRatio = window.devicePixelRatio || 1;
+                        // If flipbook, we want to match the container size exactly
+                        // Turn.js pages have fixed size. 
+                        // If Scroll view, we want width 100% and auto height.
 
-        function setupObservers() {
-            thumbObserver = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        const pageNum = parseInt(entry.target.dataset.page);
-                        renderThumbnailPage(entry.target, pageNum);
-                        thumbObserver.unobserve(entry.target);
-                    }
-                });
-            }, { root: thumbScroll, rootMargin: '200px' });
+                        let viewportScale = scale * zoomLevel;
+                        if (isFlipbook && isMobile) viewportScale = 1.0; // Reduce memory on mobile flip
 
-            scrollObserver = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        const pageNum = parseInt(entry.target.dataset.page);
-                        renderPageInContainer(entry.target, pageNum, 2.0);
-                        scrollObserver.unobserve(entry.target);
-                        if (entry.intersectionRatio > 0.5) updateState(pageNum);
-                    }
-                });
-            }, { root: scrollEl, rootMargin: '500px', threshold: 0.1 });
-        }
+                        const viewport = page.getViewport({ scale: viewportScale * pixelRatio });
 
-        function renderThumbnailsPlaceholder() {
-            thumbScroll.innerHTML = '';
-            for (let i = 1; i <= totalPages; i++) {
-                const thumb = document.createElement('div');
-                thumb.className = 'thumb' + (i === currentPage ? ' active' : '');
-                thumb.dataset.page = i;
-                thumb.onclick = () => goToPage(i);
-                thumb.innerHTML = '<div style="width:100%;height:100%;background:rgba(255,255,255,0.05);"></div>';
-                thumbScroll.appendChild(thumb);
-                thumbObserver.observe(thumb);
-            }
-        }
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
 
-        async function renderThumbnailPage(container, pageNum) {
-            try {
-                const page = await pdfDoc.getPage(pageNum);
-                const viewport = page.getViewport({ scale: 0.2 });
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-                canvas.width = viewport.width;
-                canvas.height = viewport.height;
-                container.innerHTML = '';
-                container.appendChild(canvas);
-                await page.render({ canvasContext: ctx, viewport }).promise;
-            } catch (e) { console.error(e); }
-        }
+                        canvas.width = viewport.width;
+                        canvas.height = viewport.height;
 
-        function toggleViewMode() {
-            viewMode = viewMode === 'flip' ? 'scroll' : 'flip';
-            localStorage.setItem('viewMode', viewMode);
-            updateViewModeUI();
-            handleResize();
-        }
+                        // CSS Styling
+                        if (isFlipbook) {
+                            canvas.style.width = '100%';
+                            canvas.style.height = '100%';
+                            canvas.style.objectFit = 'contain';
+                        } else {
+                            canvas.style.width = '100%';
+                            canvas.style.height = 'auto'; // Maintain aspect ratio for scroll
+                        }
 
-        function updateViewModeUI() {
-            if (viewModeBtn) {
-                if (viewMode === 'flip') {
-                    viewModeBtn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M19 5v14H5V5h14m0-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg>';
-                } else {
-                    viewModeBtn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M13 5h-2v14h2V5zm4 0h-2v14h2V5zM7 5H5v14h2V5z"/></svg>';
+                        // Bleed Trim (Gentle)
+                        canvas.style.transform = 'scale(1.02)';
+                        canvas.style.transformOrigin = 'center center';
+
+                        container.innerHTML = '';
+                        container.appendChild(canvas);
+
+                        await page.render({ canvasContext: ctx, viewport }).promise;
+                    } catch (e) { console.error(e); }
+                    finally { pageRenderingQueue.delete(pageNum); }
                 }
-            }
-        }
 
-        async function handleResize() {
-            isMobile = window.innerWidth < 768;
-            let activeMode = viewMode;
+                // ...
 
-            document.body.className = activeMode === 'scroll' ? 'mode-scroll' : 'mode-flip';
+                function loadFlipbookPage(pageNum) {
+                    const pageEl = document.querySelector(`#flipbook .page[data-page="${pageNum}"]`);
+                    if (pageEl) {
+                        renderPageInContainer(pageEl, pageNum, 2.0, true); // Pass true for isFlipbook
+                    }
+                }
 
-            if (activeMode === 'scroll') {
-                destroyFlipbook();
-                if (!scrollEl.hasChildNodes()) renderScrollViewPlaceholders();
-                scrollEl.style.display = 'flex';
-                flipbook.hide();
-                document.querySelectorAll('.side-arrow').forEach(el => el.style.display = 'none');
-            } else {
-                scrollEl.style.display = 'none';
-                flipbook.show();
-                document.querySelectorAll('.side-arrow').forEach(el => el.style.display = 'flex');
-                await renderFlipbook();
-            }
-        }
+                function destroyFlipbook() {
+                    if (flipbook.data() && flipbook.data().turn) {
+                        flipbook.turn('destroy');
+                    }
+                }
 
-        async function renderPageInContainer(container, pageNum, scale = 2.0) {
-            if (container.querySelector('canvas')) return;
-            if (pageRenderingQueue.has(pageNum)) return;
+                function updateState(pageNum) {
+                    currentPage = pageNum;
+                    pageIndicator.textContent = `${pageNum} / ${totalPages}`;
+                    slider.value = pageNum;
+                    localStorage.setItem('lastPage', pageNum);
 
-            pageRenderingQueue.add(pageNum);
-            try {
-                const page = await pdfDoc.getPage(pageNum);
+                    document.querySelectorAll('.thumb').forEach(t => {
+                        t.classList.toggle('active', parseInt(t.dataset.page) === pageNum);
+                    });
 
-                // High Resolution Rendering
-                const pixelRatio = window.devicePixelRatio || 1;
-                const viewport = page.getViewport({ scale: scale * zoomLevel * pixelRatio });
+                    const activeThumb = thumbScroll.querySelector('.thumb.active');
+                    if (activeThumb) activeThumb.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+                }
 
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
+                function goToPage(pageNum) {
+                    pageNum = parseInt(pageNum);
+                    if (pageNum < 1 || pageNum > totalPages) return;
 
-                canvas.width = viewport.width;
-                canvas.height = viewport.height;
-
-                // CSS scaling to match logical pixels
-                canvas.style.width = '100%';
-                canvas.style.height = '100%';
-
-                // Bleed Trim
-                canvas.style.transform = 'scale(1.15)';
-                canvas.style.transformOrigin = 'center center';
-
-                container.innerHTML = '';
-                container.appendChild(canvas);
-
-                await page.render({ canvasContext: ctx, viewport }).promise;
-            } catch (e) { console.error(e); }
-            finally { pageRenderingQueue.delete(pageNum); }
-        }
-
-        function renderScrollViewPlaceholders() {
-            scrollEl.innerHTML = '';
-            for (let i = 1; i <= totalPages; i++) {
-                const container = document.createElement('div');
-                container.className = 'scroll-page';
-                container.id = `page-${i}`;
-                container.dataset.page = i;
-                container.style.height = 'auto';
-                container.style.minHeight = '600px';
-                container.style.overflow = 'hidden';
-                scrollEl.appendChild(container);
-                scrollObserver.observe(container);
-            }
-            setTimeout(() => {
-                const target = document.getElementById(`page-${currentPage}`);
-                if (target) target.scrollIntoView();
-            }, 100);
-        }
-
-        async function renderFlipbook() {
-            if (flipbook.data() && flipbook.data().turn) {
-                const width = window.innerWidth * 0.95;
-                const height = window.innerHeight * 0.75;
-                flipbook.turn('size', width, height);
-                return;
-            }
-
-            flipbook.empty();
-
-            for (let i = 1; i <= totalPages; i++) {
-                const pageDiv = $('<div class="page"></div>');
-                pageDiv.attr('data-page', i);
-                pageDiv.html('<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#666;">Loading...</div>');
-                // Shadow
-                pageDiv.append('<div class="page-shadow"></div>');
-                flipbook.append(pageDiv);
-            }
-
-            flipbook.turn({
-                width: window.innerWidth * 0.95,
-                height: window.innerHeight * 0.75,
-                autoCenter: true,
-                display: 'double',
-                acceleration: true,
-                gradients: true,
-                elevation: 50,
-                duration: 1000,
-                pages: totalPages,
-                when: {
-                    turned: function (e, page) {
-                        updateState(page);
-                        loadNearbyPages(page);
-                    },
-                    missing: function (e, pages) {
-                        for (let i = 0; i < pages.length; i++) {
-                            loadFlipbookPage(pages[i]);
+                    if (viewMode === 'scroll') {
+                        const target = document.getElementById(`page-${pageNum}`);
+                        if (target) target.scrollIntoView({ behavior: 'smooth' });
+                        updateState(pageNum);
+                    } else {
+                        if (flipbook.data() && flipbook.data().turn) {
+                            flipbook.turn('page', pageNum);
                         }
                     }
                 }
-            });
 
-            flipbook.on('click', function (e) {
-                const offset = flipbook.offset();
-                const x = e.pageX - offset.left;
-                if (x < flipbook.width() / 2) flipbook.turn('previous');
-                else flipbook.turn('next');
-            });
-
-            if (currentPage > 1) flipbook.turn('page', currentPage);
-            loadNearbyPages(currentPage);
-        }
-
-        function loadNearbyPages(pageNum) {
-            const range = 2;
-            for (let i = Math.max(1, pageNum - range); i <= Math.min(totalPages, pageNum + range); i++) {
-                loadFlipbookPage(i);
-            }
-        }
-
-        function loadFlipbookPage(pageNum) {
-            const pageEl = document.querySelector(`#flipbook .page[data-page="${pageNum}"]`);
-            if (pageEl) {
-                renderPageInContainer(pageEl, pageNum, 2.0); // High quality
-            }
-        }
-
-        function destroyFlipbook() {
-            if (flipbook.data() && flipbook.data().turn) {
-                flipbook.turn('destroy');
-            }
-        }
-
-        function updateState(pageNum) {
-            currentPage = pageNum;
-            pageIndicator.textContent = `${pageNum} / ${totalPages}`;
-            slider.value = pageNum;
-            localStorage.setItem('lastPage', pageNum);
-
-            document.querySelectorAll('.thumb').forEach(t => {
-                t.classList.toggle('active', parseInt(t.dataset.page) === pageNum);
-            });
-
-            const activeThumb = thumbScroll.querySelector('.thumb.active');
-            if (activeThumb) activeThumb.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-        }
-
-        function goToPage(pageNum) {
-            pageNum = parseInt(pageNum);
-            if (pageNum < 1 || pageNum > totalPages) return;
-
-            if (viewMode === 'scroll') {
-                const target = document.getElementById(`page-${pageNum}`);
-                if (target) target.scrollIntoView({ behavior: 'smooth' });
-                updateState(pageNum);
-            } else {
-                if (flipbook.data() && flipbook.data().turn) {
-                    flipbook.turn('page', pageNum);
+                function prevPage() {
+                    if (viewMode === 'scroll') {
+                        if (currentPage > 1) goToPage(currentPage - 1);
+                    } else {
+                        flipbook.turn('previous');
+                    }
                 }
-            }
-        }
 
-        function prevPage() {
-            if (viewMode === 'scroll') {
-                if (currentPage > 1) goToPage(currentPage - 1);
-            } else {
-                flipbook.turn('previous');
-            }
-        }
+                function nextPage() {
+                    if (viewMode === 'scroll') {
+                        if (currentPage < totalPages) goToPage(currentPage + 1);
+                    } else {
+                        flipbook.turn('next');
+                    }
+                }
 
-        function nextPage() {
-            if (viewMode === 'scroll') {
-                if (currentPage < totalPages) goToPage(currentPage + 1);
-            } else {
-                flipbook.turn('next');
-            }
-        }
+                function setTheme(theme) {
+                    document.body.setAttribute('data-theme', theme);
+                    localStorage.setItem('theme', theme);
+                    document.querySelectorAll('.theme-option').forEach(opt => {
+                        opt.classList.toggle('active', opt.dataset.theme === theme);
+                    });
+                    themeMenu.classList.remove('active');
+                }
 
-        function setTheme(theme) {
-            document.body.setAttribute('data-theme', theme);
-            localStorage.setItem('theme', theme);
-            document.querySelectorAll('.theme-option').forEach(opt => {
-                opt.classList.toggle('active', opt.dataset.theme === theme);
-            });
-            themeMenu.classList.remove('active');
-        }
+                function adjustZoom(delta) {
+                    zoomLevel = Math.max(0.5, Math.min(2, zoomLevel + delta));
+                    flipbook.css('transform', `scale(${zoomLevel})`);
+                }
 
-        function adjustZoom(delta) {
-            zoomLevel = Math.max(0.5, Math.min(2, zoomLevel + delta));
-            flipbook.css('transform', `scale(${zoomLevel})`);
-        }
+                function toggleFullScreen() {
+                    if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+                    else document.exitFullscreen();
+                }
 
-        function toggleFullScreen() {
-            if (!document.fullscreenElement) document.documentElement.requestFullscreen();
-            else document.exitFullscreen();
-        }
+                function debounce(func, wait) {
+                    let timeout;
+                    return function (...args) {
+                        clearTimeout(timeout);
+                        timeout = setTimeout(() => func(...args), wait);
+                    };
+                }
 
-        function debounce(func, wait) {
-            let timeout;
-            return function (...args) {
-                clearTimeout(timeout);
-                timeout = setTimeout(() => func(...args), wait);
-            };
-        }
-
-        init();
+                init();
     </script>
 </body>
 
