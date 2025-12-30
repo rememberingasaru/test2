@@ -140,12 +140,36 @@
             height: 600px;
             background-color: var(--page-bg);
             background-size: 100% 100%;
+            overflow: hidden;
+            /* For bleed trim */
         }
 
         #flipbook .page canvas {
             width: 100%;
             height: 100%;
             object-fit: contain;
+        }
+
+        /* Spine Shadow */
+        .page-shadow {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 40px;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        /* Odd pages (right) - Shadow on left */
+        .page[data-page]:nth-child(odd) .page-shadow {
+            left: 0;
+            background: linear-gradient(to right, rgba(0, 0, 0, 0.2), transparent);
+        }
+
+        /* Even pages (left) - Shadow on right */
+        .page[data-page]:nth-child(even) .page-shadow {
+            right: 0;
+            background: linear-gradient(to left, rgba(0, 0, 0, 0.2), transparent);
         }
 
         /* Turn.js hard cover effect */
