@@ -4,108 +4,86 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>asaru</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-
+    <title>ASARU COPY</title>
     <style>
         :root {
-            --bg-color: #1a1a2e;
-            --bg-gradient: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-            --text-color: #e2e8f0;
-            --ui-bg: rgba(30, 41, 59, 0.95);
-            --ui-border: rgba(255, 255, 255, 0.1);
-            --accent-color: #60a5fa;
-            --page-bg: #ffffff;
-            --shadow-color: rgba(0, 0, 0, 0.5);
-            --thumb-bg: rgba(15, 23, 42, 0.98);
+            --bg-color: #1a1a1a;
+            --text-color: #e0e0e0;
+            --panel-bg: #2d2d2d;
+            --accent-color: #4a90e2;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
         }
 
         [data-theme="light"] {
-            --bg-color: #e2e8f0;
-            --bg-gradient: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 50%, #94a3b8 100%);
-            --text-color: #1e293b;
-            --ui-bg: rgba(255, 255, 255, 0.95);
-            --ui-border: rgba(0, 0, 0, 0.1);
-            --accent-color: #2563eb;
-            --page-bg: #ffffff;
-            --shadow-color: rgba(0, 0, 0, 0.15);
-            --thumb-bg: rgba(241, 245, 249, 0.98);
+            --bg-color: #f5f5f5;
+            --text-color: #333;
+            --panel-bg: #ffffff;
+            --accent-color: #007bff;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
 
         [data-theme="sepia"] {
-            --bg-color: #d4c4a8;
-            --bg-gradient: linear-gradient(135deg, #d4c4a8 0%, #c4b393 50%, #a89070 100%);
-            --text-color: #433422;
-            --ui-bg: rgba(212, 196, 168, 0.95);
-            --ui-border: rgba(67, 52, 34, 0.2);
-            --accent-color: #b45309;
-            --page-bg: #fdf6e3;
-            --shadow-color: rgba(67, 52, 34, 0.2);
-            --thumb-bg: rgba(244, 236, 216, 0.98);
+            --bg-color: #f4ecd8;
+            --text-color: #5b4636;
+            --panel-bg: #e6dac3;
+            --accent-color: #8b6b4e;
+            --shadow: 0 4px 6px rgba(91, 70, 54, 0.1);
         }
 
         * {
             box-sizing: border-box;
+            margin: 0;
+            padding: 0;
             -webkit-tap-highlight-color: transparent;
         }
 
         body {
-            margin: 0;
-            padding: 0;
-            background: var(--bg-gradient);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
             color: var(--text-color);
-            font-family: 'Inter', sans-serif;
-            overflow: hidden;
             height: 100vh;
-            width: 100vw;
-            transition: background 0.3s, color 0.3s;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: background-color 0.3s, color 0.3s;
         }
 
-        /* Top Bar */
-        .top-bar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
+        /* Header */
+        header {
             height: 50px;
-            background: var(--ui-bg);
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid var(--ui-border);
+            background-color: var(--panel-bg);
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            padding: 0 20px;
-            z-index: 1000;
+            justify-content: space-between;
+            padding: 0 15px;
+            box-shadow: var(--shadow);
+            z-index: 100;
         }
 
         .logo {
-            font-weight: 600;
-            font-size: 1.1rem;
+            font-weight: bold;
+            font-size: 1.2rem;
         }
 
         .top-controls {
             display: flex;
-            gap: 10px;
+            gap: 15px;
         }
 
         .btn {
-            background: transparent;
+            background: none;
             border: none;
             color: var(--text-color);
             cursor: pointer;
-            padding: 8px;
-            border-radius: 8px;
+            padding: 5px;
+            border-radius: 4px;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.2s;
         }
 
         .btn:hover {
-            background: rgba(128, 128, 128, 0.15);
-            color: var(--accent-color);
+            background-color: rgba(128, 128, 128, 0.2);
         }
 
         .btn svg {
@@ -116,38 +94,27 @@
 
         /* Main Content */
         #app-container {
-            position: absolute;
-            top: 50px;
-            bottom: 140px;
-            left: 0;
-            right: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            flex: 1;
+            position: relative;
             overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
         }
 
         /* Turn.js Flipbook */
         #flipbook {
-            width: 90vw;
-            max-width: 922px;
-            height: 60vh;
-            max-height: 600px;
+            transition: transform 0.3s ease;
         }
 
         #flipbook .page {
-            width: 461px;
-            height: 600px;
-            background-color: var(--page-bg);
-            background-size: 100% 100%;
-            overflow: hidden;
-            /* For bleed trim */
+            background-color: white;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
         }
 
-        #flipbook .page canvas {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
+        #flipbook .page-wrapper {
+            perspective: 2000px;
         }
 
         /* Spine Shadow */
@@ -155,232 +122,181 @@
             position: absolute;
             top: 0;
             bottom: 0;
-            width: 40px;
+            width: 20px;
             z-index: 10;
             pointer-events: none;
         }
 
-        /* Odd pages (right) - Shadow on left */
-        .page[data-page]:nth-child(odd) .page-shadow {
+        .page.odd .page-shadow {
             left: 0;
             background: linear-gradient(to right, rgba(0, 0, 0, 0.2), transparent);
         }
 
-        /* Even pages (left) - Shadow on right */
-        .page[data-page]:nth-child(even) .page-shadow {
+        .page.even .page-shadow {
             right: 0;
             background: linear-gradient(to left, rgba(0, 0, 0, 0.2), transparent);
         }
 
-        /* Turn.js hard cover effect */
-        #flipbook .hard {
-            background: #333 !important;
-            color: white;
-            font-weight: bold;
-        }
-
-        /* Side Navigation Arrows */
-        .side-arrow {
-            position: fixed;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 60px;
-            height: 120px;
-            background: rgba(0, 0, 0, 0.3);
-            border: none;
-            color: white;
-            cursor: pointer;
-            display: flex;
+        /* Scroll View */
+        .scroll-view {
+            display: none;
+            flex-direction: column;
+            width: 100%;
+            height: 100%;
+            overflow-y: auto;
             align-items: center;
-            justify-content: center;
-            z-index: 100;
-            transition: all 0.3s;
-            opacity: 0.6;
+            padding: 20px 0;
+            gap: 20px;
         }
 
-        .side-arrow:hover {
-            opacity: 1;
-            background: rgba(0, 0, 0, 0.5);
+        .mode-scroll .scroll-view {
+            display: flex;
         }
 
-        .side-arrow.left {
-            left: 0;
-            border-radius: 0 10px 10px 0;
+        .scroll-page {
+            background-color: white;
+            box-shadow: var(--shadow);
+            max-width: 1000px;
+            width: 100%;
+            min-height: 200px;
+            position: relative;
         }
 
-        .side-arrow.right {
-            right: 0;
-            border-radius: 10px 0 0 10px;
-        }
+        /* Mobile Scroll View Optimization */
+        @media (max-width: 768px) {
+            .scroll-page {
+                width: 95%;
+                /* Add some margin on mobile */
+                margin: 0 auto;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            }
 
-        .side-arrow svg {
-            width: 30px;
-            height: 30px;
-            fill: white;
+            .scroll-view {
+                gap: 10px;
+                /* Reduce gap on mobile */
+                padding: 10px 0;
+            }
         }
 
         /* Thumbnail Strip */
         .thumb-strip {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 130px;
-            background: var(--thumb-bg);
-            backdrop-filter: blur(10px);
-            border-top: 1px solid var(--ui-border);
+            height: 120px;
+            background-color: var(--panel-bg);
+            border-top: 1px solid rgba(128, 128, 128, 0.2);
             display: flex;
             flex-direction: column;
-            z-index: 1000;
+            z-index: 100;
         }
 
         .thumb-controls {
+            height: 40px;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 8px 20px;
-            gap: 15px;
-            border-bottom: 1px solid var(--ui-border);
-        }
-
-        .page-indicator {
-            font-size: 0.85rem;
-            color: var(--text-color);
-            min-width: 80px;
-            text-align: center;
-        }
-
-        input[type="range"] {
-            width: 200px;
-            height: 4px;
-            background: var(--ui-border);
-            border-radius: 2px;
-            appearance: none;
-            outline: none;
-        }
-
-        input[type="range"]::-webkit-slider-thumb {
-            appearance: none;
-            width: 14px;
-            height: 14px;
-            background: var(--accent-color);
-            border-radius: 50%;
-            cursor: pointer;
+            gap: 20px;
+            padding: 0 10px;
+            border-bottom: 1px solid rgba(128, 128, 128, 0.1);
         }
 
         .thumb-scroll {
             flex: 1;
             display: flex;
-            align-items: center;
             overflow-x: auto;
+            padding: 10px;
             gap: 10px;
-            padding: 10px 20px;
-            scroll-behavior: smooth;
-        }
-
-        .thumb-scroll::-webkit-scrollbar {
-            height: 6px;
-        }
-
-        .thumb-scroll::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        .thumb-scroll::-webkit-scrollbar-thumb {
-            background: rgba(128, 128, 128, 0.3);
-            border-radius: 3px;
+            align-items: center;
         }
 
         .thumb {
-            flex-shrink: 0;
-            width: 60px;
+            min-width: 60px;
             height: 80px;
-            background: var(--page-bg);
+            background-color: white;
             border: 2px solid transparent;
-            border-radius: 4px;
-            overflow: hidden;
             cursor: pointer;
-            transition: all 0.2s;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-        }
-
-        .thumb:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-        }
-
-        .thumb.active {
-            border-color: var(--accent-color);
-            box-shadow: 0 0 0 2px var(--accent-color);
+            transition: transform 0.2s, border-color 0.2s;
+            position: relative;
         }
 
         .thumb canvas {
             width: 100%;
             height: 100%;
-            object-fit: cover;
+            object-fit: contain;
         }
 
-        /* Theme Menu */
-        .theme-menu {
+        .thumb:hover {
+            transform: translateY(-2px);
+        }
+
+        .thumb.active {
+            border-color: var(--accent-color);
+            transform: scale(1.05);
+        }
+
+        /* Slider */
+        input[type=range] {
+            width: 200px;
+            accent-color: var(--accent-color);
+        }
+
+        .page-indicator {
+            font-size: 0.9rem;
+            min-width: 80px;
+            text-align: center;
+        }
+
+        /* Side Arrows */
+        .side-arrow {
             position: absolute;
-            top: 55px;
-            right: 20px;
-            background: var(--ui-bg);
-            border: 1px solid var(--ui-border);
-            border-radius: 8px;
-            padding: 8px;
-            display: none;
-            flex-direction: column;
-            gap: 4px;
-            backdrop-filter: blur(10px);
-            z-index: 1001;
-        }
-
-        .theme-menu.active {
-            display: flex;
-        }
-
-        .theme-option {
-            padding: 8px 16px;
-            cursor: pointer;
-            border-radius: 4px;
-            font-size: 0.85rem;
-            transition: all 0.2s;
-        }
-
-        .theme-option:hover {
-            background: rgba(128, 128, 128, 0.1);
-        }
-
-        .theme-option.active {
-            background: var(--accent-color);
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(0, 0, 0, 0.5);
             color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+            transition: background 0.2s;
         }
 
-        /* Loading */
+        .side-arrow:hover {
+            background: rgba(0, 0, 0, 0.8);
+        }
+
+        .side-arrow.left {
+            left: 20px;
+        }
+
+        .side-arrow.right {
+            right: 20px;
+        }
+
+        /* Loader */
         #loader {
             position: fixed;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
+            right: 0;
+            bottom: 0;
             background: var(--bg-color);
             display: flex;
-            flex-direction: column;
-            justify-content: center;
             align-items: center;
-            z-index: 2000;
+            justify-content: center;
+            z-index: 1000;
             transition: opacity 0.5s;
         }
 
         .spinner {
             width: 40px;
             height: 40px;
-            border: 3px solid rgba(128, 128, 128, 0.3);
-            border-top-color: var(--accent-color);
+            border: 4px solid var(--accent-color);
+            border-top-color: transparent;
             border-radius: 50%;
             animation: spin 1s linear infinite;
-            margin-bottom: 1rem;
         }
 
         @keyframes spin {
@@ -389,76 +305,57 @@
             }
         }
 
-        /* Mobile Scroll View */
-        .scroll-view {
-            display: none;
-            width: 100%;
-            height: 100%;
-            overflow-y: auto;
-            padding: 10px;
-            flex-direction: column;
-            align-items: center;
-            gap: 15px;
-            -webkit-overflow-scrolling: touch;
-        }
-
-        .scroll-page {
-            background: var(--page-bg);
-            box-shadow: 0 4px 15px var(--shadow-color);
-            width: 100%;
-            max-width: 100%;
+        /* Floating Menu */
+        .menu-dropdown {
+            position: absolute;
+            top: 50px;
+            right: 15px;
+            background: var(--panel-bg);
             border-radius: 4px;
-            overflow: hidden;
+            box-shadow: var(--shadow);
+            padding: 5px;
+            display: none;
+            flex-direction: column;
+            gap: 2px;
+            min-width: 150px;
         }
 
-        .scroll-page canvas {
-            width: 100%;
-            height: auto;
-            display: block;
-        }
-
-        body.mode-scroll #app-container {
-            bottom: 60px;
-        }
-
-        body.mode-scroll .scroll-view {
+        .menu-dropdown.active {
             display: flex;
         }
 
-        body.mode-scroll #flipbook {
-            display: none;
+        .menu-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
-        body.mode-scroll .side-arrow {
-            display: none;
+        .menu-item:hover {
+            background-color: rgba(128, 128, 128, 0.1);
         }
 
-        body.mode-scroll .thumb-strip {
-            height: 60px;
-        }
-
-        body.mode-scroll .thumb-scroll {
-            display: none;
+        .menu-item.active {
+            color: var(--accent-color);
+            font-weight: bold;
         }
     </style>
 </head>
 
-<body data-theme="dark">
-
+<body>
+    <!-- Loader -->
     <div id="loader">
         <div class="spinner"></div>
-        <p>Loading Book...</p>
     </div>
 
-    <!-- Top Bar -->
-    <div class="top-bar">
+    <!-- Header -->
+    <header>
         <div class="logo">asaru</div>
         <div class="top-controls">
             <button class="btn" id="viewModeBtn" title="Toggle View Mode">
-                <svg viewBox="0 0 24 24">
-                    <path
-                        d="M19 5v14H5V5h14m0-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z" />
-                </svg>
+                <!-- Icon set dynamically -->
             </button>
             <button class="btn" id="zoomOutBtn" title="Zoom Out">
                 <svg viewBox="0 0 24 24">
@@ -469,31 +366,29 @@
             <button class="btn" id="zoomInBtn" title="Zoom In">
                 <svg viewBox="0 0 24 24">
                     <path
-                        d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14zm-.5-4h2v2h1V9h2V8h-2V6H9v2H7v1h2z" />
+                        d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14zM7 9h5v1H7zM12 9h-2v2H9V9H7V9h2V7h1v2h2z" />
                 </svg>
             </button>
             <button class="btn" id="themeBtn" title="Theme">
                 <svg viewBox="0 0 24 24">
                     <path
-                        d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-2.98 0-5.4-2.42-5.4-5.4 0-1.81.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z" />
+                        d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-3.03 0-5.5-2.47-5.5-5.5 0-1.82.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z" />
                 </svg>
             </button>
+            <div class="menu-dropdown" id="themeMenu">
+                <div class="menu-item theme-option" data-theme="dark">Dark</div>
+                <div class="menu-item theme-option" data-theme="light">Light</div>
+                <div class="menu-item theme-option" data-theme="sepia">Sepia</div>
+            </div>
             <button class="btn" id="fullscreenBtn" title="Fullscreen">
                 <svg viewBox="0 0 24 24">
                     <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z" />
                 </svg>
             </button>
         </div>
-    </div>
+    </header>
 
-    <!-- Theme Menu -->
-    <div class="theme-menu" id="themeMenu">
-        <div class="theme-option" data-theme="light">Light</div>
-        <div class="theme-option" data-theme="sepia">Sepia</div>
-        <div class="theme-option" data-theme="dark">Dark</div>
-    </div>
-
-    <!-- Side Arrows -->
+    <!-- Navigation Arrows -->
     <button class="side-arrow left" id="arrowLeft">
         <svg viewBox="0 0 24 24">
             <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
@@ -608,145 +503,325 @@
                     e.stopPropagation();
                     themeMenu.classList.toggle('active');
                 };
-                // ... (rest of listeners)
+                document.querySelectorAll('.theme-option').forEach(opt => {
+                    opt.onclick = () => setTheme(opt.dataset.theme);
+                });
+                document.addEventListener('click', () => themeMenu.classList.remove('active'));
 
-                // ... (skipping to renderPageInContainer)
+                document.getElementById('fullscreenBtn').onclick = toggleFullScreen;
+                document.getElementById('zoomInBtn').onclick = () => adjustZoom(0.1);
+                document.getElementById('zoomOutBtn').onclick = () => adjustZoom(-0.1);
 
-                async function renderPageInContainer(container, pageNum, scale = 2.0, isFlipbook = false) {
-                    if (container.querySelector('canvas')) return;
-                    if (pageRenderingQueue.has(pageNum)) return;
+                if (viewModeBtn) viewModeBtn.onclick = toggleViewMode;
 
-                    pageRenderingQueue.add(pageNum);
-                    try {
-                        const page = await pdfDoc.getPage(pageNum);
+                loader.style.opacity = 0;
+                setTimeout(() => loader.style.display = 'none', 500);
 
-                        // High Resolution Rendering
-                        const pixelRatio = window.devicePixelRatio || 1;
-                        // If flipbook, we want to match the container size exactly
-                        // Turn.js pages have fixed size. 
-                        // If Scroll view, we want width 100% and auto height.
+            } catch (err) {
+                console.error(err);
+                loader.innerHTML = `<p style="color:red">Error: ${err.message}</p>`;
+            }
+        }
 
-                        let viewportScale = scale * zoomLevel;
-                        if (isFlipbook && isMobile) viewportScale = 1.0; // Reduce memory on mobile flip
+        function setupObservers() {
+            thumbObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const pageNum = parseInt(entry.target.dataset.page);
+                        renderThumbnailPage(entry.target, pageNum);
+                        thumbObserver.unobserve(entry.target);
+                    }
+                });
+            }, { root: thumbScroll, rootMargin: '200px' });
 
-                        const viewport = page.getViewport({ scale: viewportScale * pixelRatio });
+            scrollObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const pageNum = parseInt(entry.target.dataset.page);
+                        renderPageInContainer(entry.target, pageNum, 2.0);
+                        scrollObserver.unobserve(entry.target);
+                        if (entry.intersectionRatio > 0.5) updateState(pageNum);
+                    }
+                });
+            }, { root: scrollEl, rootMargin: '500px', threshold: 0.1 });
+        }
 
-                        const canvas = document.createElement('canvas');
-                        const ctx = canvas.getContext('2d');
+        function renderThumbnailsPlaceholder() {
+            thumbScroll.innerHTML = '';
+            for (let i = 1; i <= totalPages; i++) {
+                const thumb = document.createElement('div');
+                thumb.className = 'thumb' + (i === currentPage ? ' active' : '');
+                thumb.dataset.page = i;
+                thumb.onclick = () => goToPage(i);
+                thumb.innerHTML = '<div style="width:100%;height:100%;background:rgba(255,255,255,0.05);"></div>';
+                thumbScroll.appendChild(thumb);
+                thumbObserver.observe(thumb);
+            }
+        }
 
-                        canvas.width = viewport.width;
-                        canvas.height = viewport.height;
+        async function renderThumbnailPage(container, pageNum) {
+            try {
+                const page = await pdfDoc.getPage(pageNum);
+                const viewport = page.getViewport({ scale: 0.2 });
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = viewport.width;
+                canvas.height = viewport.height;
+                container.innerHTML = '';
+                container.appendChild(canvas);
+                await page.render({ canvasContext: ctx, viewport }).promise;
+            } catch (e) { console.error(e); }
+        }
 
-                        // CSS Styling
-                        if (isFlipbook) {
-                            canvas.style.width = '100%';
-                            canvas.style.height = '100%';
-                            canvas.style.objectFit = 'contain';
-                        } else {
-                            canvas.style.width = '100%';
-                            canvas.style.height = 'auto'; // Maintain aspect ratio for scroll
+        function toggleViewMode() {
+            viewMode = viewMode === 'flip' ? 'scroll' : 'flip';
+            localStorage.setItem('viewMode', viewMode);
+            updateViewModeUI();
+            handleResize();
+        }
+
+        function updateViewModeUI() {
+            if (viewModeBtn) {
+                if (viewMode === 'flip') {
+                    viewModeBtn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M19 5v14H5V5h14m0-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg>';
+                } else {
+                    viewModeBtn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M13 5h-2v14h2V5zm4 0h-2v14h2V5zM7 5H5v14h2V5z"/></svg>';
+                }
+            }
+        }
+
+        async function handleResize() {
+            isMobile = window.innerWidth < 768;
+            let activeMode = viewMode;
+
+            document.body.className = activeMode === 'scroll' ? 'mode-scroll' : 'mode-flip';
+
+            if (activeMode === 'scroll') {
+                destroyFlipbook();
+                if (!scrollEl.hasChildNodes()) renderScrollViewPlaceholders();
+                scrollEl.style.display = 'flex';
+                flipbook.hide();
+                document.querySelectorAll('.side-arrow').forEach(el => el.style.display = 'none');
+            } else {
+                scrollEl.style.display = 'none';
+                flipbook.show();
+                document.querySelectorAll('.side-arrow').forEach(el => el.style.display = 'flex');
+                await renderFlipbook();
+            }
+        }
+
+        async function renderPageInContainer(container, pageNum, scale = 2.0, isFlipbook = false) {
+            if (container.querySelector('canvas')) return;
+            if (pageRenderingQueue.has(pageNum)) return;
+
+            pageRenderingQueue.add(pageNum);
+            try {
+                const page = await pdfDoc.getPage(pageNum);
+
+                // High Resolution Rendering
+                const pixelRatio = window.devicePixelRatio || 1;
+                // If flipbook, we want to match the container size exactly
+                // Turn.js pages have fixed size. 
+                // If Scroll view, we want width 100% and auto height.
+
+                let viewportScale = scale * zoomLevel;
+                if (isFlipbook && isMobile) viewportScale = 1.0; // Reduce memory on mobile flip
+
+                const viewport = page.getViewport({ scale: viewportScale * pixelRatio });
+
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+
+                canvas.width = viewport.width;
+                canvas.height = viewport.height;
+
+                // CSS Styling
+                if (isFlipbook) {
+                    canvas.style.width = '100%';
+                    canvas.style.height = '100%';
+                    canvas.style.objectFit = 'contain';
+                } else {
+                    canvas.style.width = '100%';
+                    canvas.style.height = 'auto'; // Maintain aspect ratio for scroll
+                }
+
+                // Bleed Trim (Gentle)
+                canvas.style.transform = 'scale(1.02)';
+                canvas.style.transformOrigin = 'center center';
+
+                container.innerHTML = '';
+                container.appendChild(canvas);
+
+                await page.render({ canvasContext: ctx, viewport }).promise;
+            } catch (e) { console.error(e); }
+            finally { pageRenderingQueue.delete(pageNum); }
+        }
+
+        function renderScrollViewPlaceholders() {
+            scrollEl.innerHTML = '';
+            for (let i = 1; i <= totalPages; i++) {
+                const container = document.createElement('div');
+                container.className = 'scroll-page';
+                container.id = `page-${i}`;
+                container.dataset.page = i;
+                container.style.height = 'auto';
+                container.style.minHeight = '600px';
+                container.style.overflow = 'hidden';
+                scrollEl.appendChild(container);
+                scrollObserver.observe(container);
+            }
+            setTimeout(() => {
+                const target = document.getElementById(`page-${currentPage}`);
+                if (target) target.scrollIntoView();
+            }, 100);
+        }
+
+        async function renderFlipbook() {
+            if (flipbook.data() && flipbook.data().turn) {
+                const width = window.innerWidth * 0.95;
+                const height = window.innerHeight * 0.75;
+                flipbook.turn('size', width, height);
+                return;
+            }
+
+            flipbook.empty();
+
+            for (let i = 1; i <= totalPages; i++) {
+                const pageDiv = $('<div class="page"></div>');
+                pageDiv.attr('data-page', i);
+                pageDiv.html('<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#666;">Loading...</div>');
+                // Shadow
+                pageDiv.append('<div class="page-shadow"></div>');
+                flipbook.append(pageDiv);
+            }
+
+            flipbook.turn({
+                width: window.innerWidth * 0.95,
+                height: window.innerHeight * 0.75,
+                autoCenter: true,
+                display: 'double',
+                acceleration: true,
+                gradients: true,
+                elevation: 50,
+                duration: 1000,
+                pages: totalPages,
+                when: {
+                    turned: function (e, page) {
+                        updateState(page);
+                        loadNearbyPages(page);
+                    },
+                    missing: function (e, pages) {
+                        for (let i = 0; i < pages.length; i++) {
+                            loadFlipbookPage(pages[i]);
                         }
-
-                        // Bleed Trim (Gentle)
-                        canvas.style.transform = 'scale(1.02)';
-                        canvas.style.transformOrigin = 'center center';
-
-                        container.innerHTML = '';
-                        container.appendChild(canvas);
-
-                        await page.render({ canvasContext: ctx, viewport }).promise;
-                    } catch (e) { console.error(e); }
-                    finally { pageRenderingQueue.delete(pageNum); }
-                }
-
-                // ...
-
-                function loadFlipbookPage(pageNum) {
-                    const pageEl = document.querySelector(`#flipbook .page[data-page="${pageNum}"]`);
-                    if (pageEl) {
-                        renderPageInContainer(pageEl, pageNum, 2.0, true); // Pass true for isFlipbook
                     }
                 }
+            });
 
-                function destroyFlipbook() {
-                    if (flipbook.data() && flipbook.data().turn) {
-                        flipbook.turn('destroy');
-                    }
+            flipbook.on('click', function (e) {
+                const offset = flipbook.offset();
+                const x = e.pageX - offset.left;
+                if (x < flipbook.width() / 2) flipbook.turn('previous');
+                else flipbook.turn('next');
+            });
+
+            if (currentPage > 1) flipbook.turn('page', currentPage);
+            loadNearbyPages(currentPage);
+        }
+
+        function loadNearbyPages(pageNum) {
+            const range = 2;
+            for (let i = Math.max(1, pageNum - range); i <= Math.min(totalPages, pageNum + range); i++) {
+                loadFlipbookPage(i);
+            }
+        }
+
+        function loadFlipbookPage(pageNum) {
+            const pageEl = document.querySelector(`#flipbook .page[data-page="${pageNum}"]`);
+            if (pageEl) {
+                renderPageInContainer(pageEl, pageNum, 2.0, true); // Pass true for isFlipbook
+            }
+        }
+
+        function destroyFlipbook() {
+            if (flipbook.data() && flipbook.data().turn) {
+                flipbook.turn('destroy');
+            }
+        }
+
+        function updateState(pageNum) {
+            currentPage = pageNum;
+            pageIndicator.textContent = `${pageNum} / ${totalPages}`;
+            slider.value = pageNum;
+            localStorage.setItem('lastPage', pageNum);
+
+            document.querySelectorAll('.thumb').forEach(t => {
+                t.classList.toggle('active', parseInt(t.dataset.page) === pageNum);
+            });
+
+            const activeThumb = thumbScroll.querySelector('.thumb.active');
+            if (activeThumb) activeThumb.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+        }
+
+        function goToPage(pageNum) {
+            pageNum = parseInt(pageNum);
+            if (pageNum < 1 || pageNum > totalPages) return;
+
+            if (viewMode === 'scroll') {
+                const target = document.getElementById(`page-${pageNum}`);
+                if (target) target.scrollIntoView({ behavior: 'smooth' });
+                updateState(pageNum);
+            } else {
+                if (flipbook.data() && flipbook.data().turn) {
+                    flipbook.turn('page', pageNum);
                 }
+            }
+        }
 
-                function updateState(pageNum) {
-                    currentPage = pageNum;
-                    pageIndicator.textContent = `${pageNum} / ${totalPages}`;
-                    slider.value = pageNum;
-                    localStorage.setItem('lastPage', pageNum);
+        function prevPage() {
+            if (viewMode === 'scroll') {
+                if (currentPage > 1) goToPage(currentPage - 1);
+            } else {
+                flipbook.turn('previous');
+            }
+        }
 
-                    document.querySelectorAll('.thumb').forEach(t => {
-                        t.classList.toggle('active', parseInt(t.dataset.page) === pageNum);
-                    });
+        function nextPage() {
+            if (viewMode === 'scroll') {
+                if (currentPage < totalPages) goToPage(currentPage + 1);
+            } else {
+                flipbook.turn('next');
+            }
+        }
 
-                    const activeThumb = thumbScroll.querySelector('.thumb.active');
-                    if (activeThumb) activeThumb.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-                }
+        function setTheme(theme) {
+            document.body.setAttribute('data-theme', theme);
+            localStorage.setItem('theme', theme);
+            document.querySelectorAll('.theme-option').forEach(opt => {
+                opt.classList.toggle('active', opt.dataset.theme === theme);
+            });
+            themeMenu.classList.remove('active');
+        }
 
-                function goToPage(pageNum) {
-                    pageNum = parseInt(pageNum);
-                    if (pageNum < 1 || pageNum > totalPages) return;
+        function adjustZoom(delta) {
+            zoomLevel = Math.max(0.5, Math.min(2, zoomLevel + delta));
+            flipbook.css('transform', `scale(${zoomLevel})`);
+        }
 
-                    if (viewMode === 'scroll') {
-                        const target = document.getElementById(`page-${pageNum}`);
-                        if (target) target.scrollIntoView({ behavior: 'smooth' });
-                        updateState(pageNum);
-                    } else {
-                        if (flipbook.data() && flipbook.data().turn) {
-                            flipbook.turn('page', pageNum);
-                        }
-                    }
-                }
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+            else document.exitFullscreen();
+        }
 
-                function prevPage() {
-                    if (viewMode === 'scroll') {
-                        if (currentPage > 1) goToPage(currentPage - 1);
-                    } else {
-                        flipbook.turn('previous');
-                    }
-                }
+        function debounce(func, wait) {
+            let timeout;
+            return function (...args) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func(...args), wait);
+            };
+        }
 
-                function nextPage() {
-                    if (viewMode === 'scroll') {
-                        if (currentPage < totalPages) goToPage(currentPage + 1);
-                    } else {
-                        flipbook.turn('next');
-                    }
-                }
-
-                function setTheme(theme) {
-                    document.body.setAttribute('data-theme', theme);
-                    localStorage.setItem('theme', theme);
-                    document.querySelectorAll('.theme-option').forEach(opt => {
-                        opt.classList.toggle('active', opt.dataset.theme === theme);
-                    });
-                    themeMenu.classList.remove('active');
-                }
-
-                function adjustZoom(delta) {
-                    zoomLevel = Math.max(0.5, Math.min(2, zoomLevel + delta));
-                    flipbook.css('transform', `scale(${zoomLevel})`);
-                }
-
-                function toggleFullScreen() {
-                    if (!document.fullscreenElement) document.documentElement.requestFullscreen();
-                    else document.exitFullscreen();
-                }
-
-                function debounce(func, wait) {
-                    let timeout;
-                    return function (...args) {
-                        clearTimeout(timeout);
-                        timeout = setTimeout(() => func(...args), wait);
-                    };
-                }
-
-                init();
+        init();
     </script>
 </body>
 
