@@ -156,10 +156,8 @@
         .scroll-page {
             background-color: white;
             box-shadow: var(--shadow);
-            max-width: 1000px;
-            width: 100%;
-            min-height: 200px;
-            position: relative;
+            max-width: 800px;
+            width: 95%;
         }
 
         /* Mobile Scroll View Optimization */
@@ -552,10 +550,9 @@
                         const pageNum = parseInt(entry.target.dataset.page);
                         renderPageInContainer(entry.target, pageNum, 2.0);
                         scrollObserver.unobserve(entry.target);
-                        if (entry.intersectionRatio > 0.5) updateState(pageNum);
                     }
                 });
-            }, { root: scrollEl, rootMargin: '500px', threshold: 0.1 });
+            }, { rootMargin: '200px', threshold: 0.01 });
         }
 
         function renderThumbnailsPlaceholder() {
@@ -800,9 +797,14 @@
             pageNum = parseInt(pageNum);
             if (pageNum < 1 || pageNum > totalPages) return;
 
+            console.log('goToPage called:', pageNum, 'viewMode:', viewMode);
+
             if (viewMode === 'scroll') {
                 const target = document.getElementById(`page-${pageNum}`);
-                if (target) target.scrollIntoView({ behavior: 'smooth' });
+                if (target) {
+                    // Scroll within the scrollEl container
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
                 updateState(pageNum);
             } else {
                 if (flipbook.data() && flipbook.data().turn) {
