@@ -856,13 +856,13 @@
 
         function adjustZoom(delta) {
             zoomLevel = Math.max(0.5, Math.min(2, zoomLevel + delta));
-            const appContainer = document.getElementById('app-container');
             if (viewMode === 'scroll') {
-                // For scroll mode, scale each page individually
-                document.querySelectorAll('.scroll-page canvas').forEach(canvas => {
-                    canvas.style.transform = `scale(${zoomLevel})`;
-                    canvas.style.transformOrigin = 'top center';
-                });
+                // Scale the entire scroll view content
+                const scrollContent = scrollEl.querySelector('.scroll-page')?.parentElement || scrollEl;
+                scrollEl.style.transform = `scale(${zoomLevel})`;
+                scrollEl.style.transformOrigin = 'top center';
+                scrollEl.style.width = `${100 / zoomLevel}%`;
+                scrollEl.style.marginLeft = `${(100 - 100 / zoomLevel) / 2}%`;
             } else {
                 flipbook.css('transform', `scale(${zoomLevel})`);
                 flipbook.css('transform-origin', 'center center');
