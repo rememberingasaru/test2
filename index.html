@@ -129,8 +129,10 @@
 
         /* Turn.js Flipbook */
         #flipbook {
-            width: 922px;
-            height: 600px;
+            width: 90vw;
+            max-width: 922px;
+            height: 60vh;
+            max-height: 600px;
         }
 
         #flipbook .page {
@@ -369,16 +371,26 @@
             width: 100%;
             height: 100%;
             overflow-y: auto;
-            padding: 20px;
+            padding: 10px;
             flex-direction: column;
             align-items: center;
-            gap: 20px;
+            gap: 15px;
+            -webkit-overflow-scrolling: touch;
         }
 
         .scroll-page {
             background: var(--page-bg);
             box-shadow: 0 4px 15px var(--shadow-color);
+            width: 100%;
             max-width: 100%;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .scroll-page canvas {
+            width: 100%;
+            height: auto;
+            display: block;
         }
 
         body.mode-scroll #app-container {
@@ -659,17 +671,32 @@
 
             // Initialize Turn.js
             flipbook.turn({
-                width: 922,
-                height: 600,
+                width: Math.min(922, window.innerWidth * 0.9),
+                height: Math.min(600, window.innerHeight * 0.6),
                 autoCenter: true,
                 display: 'double',
                 acceleration: true,
                 gradients: true,
                 elevation: 50,
+                duration: 1000,
                 when: {
                     turned: function (e, page) {
                         updateState(page);
                     }
+                }
+            });
+
+            // Add click-to-turn on pages
+            flipbook.on('click', function (e) {
+                const offset = flipbook.offset();
+                const x = e.pageX - offset.left;
+                const width = flipbook.width();
+
+                // Click on left half = previous, right half = next
+                if (x < width / 2) {
+                    flipbook.turn('previous');
+                } else {
+                    flipbook.turn('next');
                 }
             });
 
@@ -703,12 +730,14 @@
         }
 
         function goToPage(pageNum) {
+            pageNum = parseInt(pageNum);
             if (pageNum < 1 || pageNum > totalPages) return;
+
             if (isMobile) {
                 const target = document.getElementById(`page-${pageNum}`);
                 if (target) target.scrollIntoView({ behavior: 'smooth' });
             } else {
-                if (flipbook.data().turn) {
+                if (flipbook.data() && flipbook.data().turn) {
                     flipbook.turn('page', pageNum);
                 }
             }
