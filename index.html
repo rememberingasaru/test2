@@ -857,12 +857,13 @@
         function adjustZoom(delta) {
             zoomLevel = Math.max(0.5, Math.min(2, zoomLevel + delta));
             if (viewMode === 'scroll') {
-                // Scale the entire scroll view content
-                const scrollContent = scrollEl.querySelector('.scroll-page')?.parentElement || scrollEl;
-                scrollEl.style.transform = `scale(${zoomLevel})`;
-                scrollEl.style.transformOrigin = 'top center';
-                scrollEl.style.width = `${100 / zoomLevel}%`;
-                scrollEl.style.marginLeft = `${(100 - 100 / zoomLevel) / 2}%`;
+                // Adjust the max-width of scroll pages based on zoom level
+                // Base width is 800px, scale it
+                const baseWidth = 800;
+                const newWidth = baseWidth * zoomLevel;
+                document.querySelectorAll('.scroll-page').forEach(page => {
+                    page.style.maxWidth = `${newWidth}px`;
+                });
             } else {
                 flipbook.css('transform', `scale(${zoomLevel})`);
                 flipbook.css('transform-origin', 'center center');
