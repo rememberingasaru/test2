@@ -158,6 +158,12 @@
             box-shadow: var(--shadow);
             max-width: 800px;
             width: 95%;
+            margin-bottom: 20px;
+            height: auto;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+            transition: max-width 0.2s ease;
         }
 
         /* Mobile Scroll View Optimization */
@@ -856,17 +862,27 @@
 
         function adjustZoom(delta) {
             zoomLevel = Math.max(0.5, Math.min(2, zoomLevel + delta));
+
             if (viewMode === 'scroll') {
-                // Adjust the max-width of scroll pages based on zoom level
-                // Base width is 800px, scale it
                 const baseWidth = 800;
                 const newWidth = baseWidth * zoomLevel;
                 document.querySelectorAll('.scroll-page').forEach(page => {
                     page.style.maxWidth = `${newWidth}px`;
+                    page.style.width = '100%';
                 });
             } else {
-                flipbook.css('transform', `scale(${zoomLevel})`);
-                flipbook.css('transform-origin', 'center center');
+                flipbook.css({
+                    'transform': `scale(${zoomLevel})`,
+                    'transform-origin': 'center top',
+                    'transition': 'transform 0.2s ease-in-out'
+                });
+
+                // Adjust the container to prevent overlapping
+                const container = flipbook.parent();
+                container.css({
+                    'height': (flipbook.height() * zoomLevel) + 'px',
+                    'overflow': 'auto'
+                });
             }
         }
 
