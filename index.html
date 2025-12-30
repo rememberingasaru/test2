@@ -734,12 +734,13 @@
                 width: width,
                 height: height,
                 autoCenter: true,
-                display: isMobile ? 'single' : 'double', // Single page on mobile if flipbook used
+                display: isMobile ? 'single' : 'double',
                 acceleration: true,
                 gradients: true,
                 elevation: 50,
-                duration: 1000,
+                duration: 800,
                 pages: totalPages,
+                turnCorners: 'bl,br', // Enable page corners for dragging
                 when: {
                     turned: function (e, page) {
                         updateState(page);
@@ -840,7 +841,13 @@
 
         function adjustZoom(delta) {
             zoomLevel = Math.max(0.5, Math.min(2, zoomLevel + delta));
-            flipbook.css('transform', `scale(${zoomLevel})`);
+            if (viewMode === 'scroll') {
+                // Apply zoom to scroll container
+                scrollEl.style.transform = `scale(${zoomLevel})`;
+                scrollEl.style.transformOrigin = 'top center';
+            } else {
+                flipbook.css('transform', `scale(${zoomLevel})`);
+            }
         }
 
         function toggleFullScreen() {
