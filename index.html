@@ -864,10 +864,13 @@
             zoomLevel = Math.max(0.5, Math.min(2, zoomLevel + delta));
 
             if (viewMode === 'scroll') {
-                // Save current scroll position relative to content
-                const scrollTop = scrollEl.scrollTop;
-                const scrollHeight = scrollEl.scrollHeight;
-                const scrollRatio = scrollTop / scrollHeight;
+                // Find which page is currently in view
+                const currentPageEl = document.getElementById(`page-${currentPage}`);
+
+                // Disable transition during zoom to prevent visual jumping
+                document.querySelectorAll('.scroll-page').forEach(page => {
+                    page.style.transition = 'none';
+                });
 
                 const baseWidth = 800;
                 const newWidth = baseWidth * zoomLevel;
@@ -876,9 +879,16 @@
                     page.style.width = '100%';
                 });
 
-                // Restore scroll position after layout change
+                // Scroll current page back into view without animation
+                if (currentPageEl) {
+                    currentPageEl.scrollIntoView({ behavior: 'instant', block: 'start' });
+                }
+
+                // Re-enable transition after a frame
                 requestAnimationFrame(() => {
-                    scrollEl.scrollTop = scrollRatio * scrollEl.scrollHeight;
+                    document.querySelectorAll('.scroll-page').forEach(page => {
+                        page.style.transition = 'max-width 0.2s ease';
+                    });
                 });
             } else {
                 flipbook.css({
