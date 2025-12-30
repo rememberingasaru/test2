@@ -163,7 +163,6 @@
             display: block;
             margin-left: auto;
             margin-right: auto;
-            transition: max-width 0.2s ease;
         }
 
         /* Mobile Scroll View Optimization */
@@ -864,31 +863,11 @@
             zoomLevel = Math.max(0.5, Math.min(2, zoomLevel + delta));
 
             if (viewMode === 'scroll') {
-                // Find which page is currently in view
-                const currentPageEl = document.getElementById(`page-${currentPage}`);
-
-                // Disable transition during zoom to prevent visual jumping
-                document.querySelectorAll('.scroll-page').forEach(page => {
-                    page.style.transition = 'none';
-                });
-
+                // Simply adjust max-width - no transitions, no scroll manipulation
                 const baseWidth = 800;
                 const newWidth = baseWidth * zoomLevel;
                 document.querySelectorAll('.scroll-page').forEach(page => {
                     page.style.maxWidth = `${newWidth}px`;
-                    page.style.width = '100%';
-                });
-
-                // Scroll current page back into view without animation
-                if (currentPageEl) {
-                    currentPageEl.scrollIntoView({ behavior: 'instant', block: 'start' });
-                }
-
-                // Re-enable transition after a frame
-                requestAnimationFrame(() => {
-                    document.querySelectorAll('.scroll-page').forEach(page => {
-                        page.style.transition = 'max-width 0.2s ease';
-                    });
                 });
             } else {
                 flipbook.css({
@@ -897,7 +876,6 @@
                     'transition': 'transform 0.2s ease-in-out'
                 });
 
-                // Adjust the container to prevent overlapping
                 const container = flipbook.parent();
                 container.css({
                     'height': (flipbook.height() * zoomLevel) + 'px',
