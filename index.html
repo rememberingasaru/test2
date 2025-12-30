@@ -474,8 +474,19 @@
                 totalPages = pdfDoc.numPages;
                 slider.max = totalPages;
 
+                // aspect ratio calc
+                const firstPage = await pdfDoc.getPage(1);
+                const viewport = firstPage.getViewport({ scale: 1 });
+                const aspectRatio = viewport.width / viewport.height;
+                window.pdfAspectRatio = aspectRatio;
+
                 const savedTheme = localStorage.getItem('theme') || 'dark';
                 setTheme(savedTheme);
+
+                // Default to scroll on mobile if no preference is saved
+                if (!localStorage.getItem('viewMode') && isMobile) {
+                    viewMode = 'scroll';
+                }
 
                 setupObservers();
                 updateViewModeUI();
@@ -496,7 +507,8 @@
                     pageIndicator.textContent = `${page} / ${totalPages}`;
                 };
                 slider.onchange = (e) => {
-                    goToPage(parseInt(e.target.value));
+                    const page = parseInt(e.target.value);
+                    goToPage(page);
                 };
 
                 document.getElementById('themeBtn').onclick = (e) => {
@@ -594,6 +606,9 @@
             isMobile = window.innerWidth < 768;
             let activeMode = viewMode;
 
+            // Force scroll on mobile if user hasn't explicitly set flip (optional, but good for UX)
+            // For now, respect the viewMode variable which we set in init
+
             document.body.className = activeMode === 'scroll' ? 'mode-scroll' : 'mode-flip';
 
             if (activeMode === 'scroll') {
@@ -602,6 +617,11 @@
                 scrollEl.style.display = 'flex';
                 flipbook.hide();
                 document.querySelectorAll('.side-arrow').forEach(el => el.style.display = 'none');
+
+                // Scroll to current page
+                const target = document.getElementById(`page-${currentPage}`);
+                if (target) setTimeout(() => target.scrollIntoView(), 100);
+
             } else {
                 scrollEl.style.display = 'none';
                 flipbook.show();
@@ -620,12 +640,9 @@
 
                 // High Resolution Rendering
                 const pixelRatio = window.devicePixelRatio || 1;
-                // If flipbook, we want to match the container size exactly
-                // Turn.js pages have fixed size. 
-                // If Scroll view, we want width 100% and auto height.
 
                 let viewportScale = scale * zoomLevel;
-                if (isFlipbook && isMobile) viewportScale = 1.0; // Reduce memory on mobile flip
+                // Don't reduce quality on mobile flip, it looks blurry. Just rely on browser scaling.
 
                 const viewport = page.getViewport({ scale: viewportScale * pixelRatio });
 
@@ -639,15 +656,17 @@
                 if (isFlipbook) {
                     canvas.style.width = '100%';
                     canvas.style.height = '100%';
+                    // Object fit cover might cut off content, contain adds bars.
+                    // We will match the container aspect ratio so 'contain' is perfect.
                     canvas.style.objectFit = 'contain';
                 } else {
                     canvas.style.width = '100%';
-                    canvas.style.height = 'auto'; // Maintain aspect ratio for scroll
+                    canvas.style.height = 'auto';
                 }
 
-                // Bleed Trim (Gentle)
-                canvas.style.transform = 'scale(1.02)';
-                canvas.style.transformOrigin = 'center center';
+                // Bleed Trim (Gentle) - only if needed
+                // display: block helps remove bottom margin on canvas
+                canvas.style.display = 'block';
 
                 container.innerHTML = '';
                 container.appendChild(canvas);
@@ -677,9 +696,31 @@
         }
 
         async function renderFlipbook() {
+            const ar = window.pdfAspectRatio || 0.7; // default fallback
+            let width, height;
+
+            if (isMobile) {
+                // Mobile flipbook (if enabled) - single page view essentially
+                width = window.innerWidth * 0.95;
+                height = width / ar;
+                // Cap height
+                if (height > window.innerHeight * 0.8) {
+                    height = window.innerHeight * 0.8;
+                    width = height * ar;
+                }
+            } else {
+                // Desktop double page
+                height = window.innerHeight * 0.85;
+                width = height * ar * 2; // Double width for two pages
+
+                // Cap width if it exceeds screen
+                if (width > window.innerWidth * 0.95) {
+                    width = window.innerWidth * 0.95;
+                    height = width / (ar * 2);
+                }
+            }
+
             if (flipbook.data() && flipbook.data().turn) {
-                const width = window.innerWidth * 0.95;
-                const height = window.innerHeight * 0.75;
                 flipbook.turn('size', width, height);
                 return;
             }
@@ -696,10 +737,10 @@
             }
 
             flipbook.turn({
-                width: window.innerWidth * 0.95,
-                height: window.innerHeight * 0.75,
+                width: width,
+                height: height,
                 autoCenter: true,
-                display: 'double',
+                display: isMobile ? 'single' : 'double', // Single page on mobile if flipbook used
                 acceleration: true,
                 gradients: true,
                 elevation: 50,
@@ -719,6 +760,9 @@
             });
 
             flipbook.on('click', function (e) {
+                // Only turn if clicking edges, or simple Logic
+                // For simplicity, left 30% prev, right 30% next?
+                // Or just keep simple left/right split
                 const offset = flipbook.offset();
                 const x = e.pageX - offset.left;
                 if (x < flipbook.width() / 2) flipbook.turn('previous');
