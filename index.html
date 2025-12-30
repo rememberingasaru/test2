@@ -549,6 +549,7 @@
         let pageRenderingQueue = new Set();
         let thumbObserver = null;
         let scrollObserver = null;
+        let viewMode = localStorage.getItem('viewMode') || 'flip'; // 'flip' or 'scroll'
 
         // Elements
         const flipbook = $('#flipbook');
@@ -558,6 +559,7 @@
         const pageIndicator = document.getElementById('pageIndicator');
         const themeMenu = document.getElementById('themeMenu');
         const thumbScroll = document.getElementById('thumbScroll');
+        const viewModeBtn = document.getElementById('viewModeBtn');
 
         // Initialize
         async function init() {
@@ -565,12 +567,12 @@
                 if (typeof pdfjsLib === 'undefined') throw new Error("PDF.js not loaded");
                 if (typeof $.fn.turn === 'undefined') throw new Error("Turn.js not loaded");
 
-                // Load PDF with streaming and range requests enabled
+                // Load PDF
                 const loadingTask = pdfjsLib.getDocument({
                     url: pdfPath,
-                    rangeChunkSize: 65536 * 2, // 128KB chunks
-                    disableAutoFetch: true,    // Don't download whole file
-                    disableStream: false       // Enable streaming
+                    rangeChunkSize: 65536 * 2,
+                    disableAutoFetch: true,
+                    disableStream: false
                 });
 
                 pdfDoc = await loadingTask.promise;
@@ -580,12 +582,10 @@
                 const savedTheme = localStorage.getItem('theme') || 'dark';
                 setTheme(savedTheme);
 
-                // Setup Observers
                 setupObservers();
-
-                // Initial Render
+                updateViewModeUI();
                 await handleResize();
-                renderThumbnailsPlaceholder(); // Fast, just divs
+                renderThumbnailsPlaceholder();
 
                 // Event Listeners
                 window.addEventListener('resize', debounce(handleResize, 200));
@@ -594,7 +594,15 @@
                 document.getElementById('nextBtn').onclick = nextPage;
                 document.getElementById('arrowLeft').onclick = prevPage;
                 document.getElementById('arrowRight').onclick = nextPage;
-                slider.oninput = (e) => goToPage(parseInt(e.target.value));
+
+                // Fix Slider Logic
+                slider.oninput = (e) => {
+                    const page = parseInt(e.target.value);
+                    pageIndicator.textContent = `${page} / ${totalPages}`;
+                };
+                slider.onchange = (e) => {
+                    goToPage(parseInt(e.target.value));
+                };
 
                 document.getElementById('themeBtn').onclick = (e) => {
                     e.stopPropagation();
@@ -609,7 +617,8 @@
                 document.getElementById('zoomInBtn').onclick = () => adjustZoom(0.1);
                 document.getElementById('zoomOutBtn').onclick = () => adjustZoom(-0.1);
 
-                // Hide loader immediately after basic setup
+                if (viewModeBtn) viewModeBtn.onclick = toggleViewMode;
+
                 loader.style.opacity = 0;
                 setTimeout(() => loader.style.display = 'none', 500);
 
@@ -620,7 +629,6 @@
         }
 
         function setupObservers() {
-            // Thumbnail Lazy Loader
             thumbObserver = new IntersectionObserver((entries) => {
                 entries.forEach(entry => {
                     if (entry.isIntersecting) {
@@ -631,24 +639,18 @@
                 });
             }, { root: thumbScroll, rootMargin: '200px' });
 
-            // Mobile Scroll Lazy Loader
             scrollObserver = new IntersectionObserver((entries) => {
                 entries.forEach(entry => {
                     if (entry.isIntersecting) {
                         const pageNum = parseInt(entry.target.dataset.page);
-                        renderPageInContainer(entry.target, pageNum, 1.5);
+                        renderPageInContainer(entry.target, pageNum, 2.0);
                         scrollObserver.unobserve(entry.target);
-
-                        // Update current page on scroll
-                        if (entry.intersectionRatio > 0.5) {
-                            updateState(pageNum);
-                        }
+                        if (entry.intersectionRatio > 0.5) updateState(pageNum);
                     }
                 });
             }, { root: scrollEl, rootMargin: '500px', threshold: 0.1 });
         }
 
-        // Thumbnails - Placeholders first
         function renderThumbnailsPlaceholder() {
             thumbScroll.innerHTML = '';
             for (let i = 1; i <= totalPages; i++) {
@@ -656,7 +658,6 @@
                 thumb.className = 'thumb' + (i === currentPage ? ' active' : '');
                 thumb.dataset.page = i;
                 thumb.onclick = () => goToPage(i);
-                // Add loading indicator
                 thumb.innerHTML = '<div style="width:100%;height:100%;background:rgba(255,255,255,0.05);"></div>';
                 thumbScroll.appendChild(thumb);
                 thumbObserver.observe(thumb);
@@ -666,63 +667,88 @@
         async function renderThumbnailPage(container, pageNum) {
             try {
                 const page = await pdfDoc.getPage(pageNum);
-                const viewport = page.getViewport({ scale: 0.15 });
+                const viewport = page.getViewport({ scale: 0.2 });
                 const canvas = document.createElement('canvas');
                 const ctx = canvas.getContext('2d');
                 canvas.width = viewport.width;
                 canvas.height = viewport.height;
-
-                container.innerHTML = ''; // Clear placeholder
+                container.innerHTML = '';
                 container.appendChild(canvas);
-
                 await page.render({ canvasContext: ctx, viewport }).promise;
-            } catch (e) {
-                console.error(`Error rendering thumb ${pageNum}`, e);
-            }
+            } catch (e) { console.error(e); }
         }
 
-        // Mode Switching
-        async function handleResize() {
-            const newIsMobile = window.innerWidth < 768;
-            if (newIsMobile !== isMobile || (!flipbook.data() || !flipbook.data().turn) && !scrollEl.hasChildNodes()) {
-                isMobile = newIsMobile;
-                document.body.className = isMobile ? 'mode-scroll' : '';
+        function toggleViewMode() {
+            viewMode = viewMode === 'flip' ? 'scroll' : 'flip';
+            localStorage.setItem('viewMode', viewMode);
+            updateViewModeUI();
+            handleResize();
+        }
 
-                if (isMobile) {
-                    destroyFlipbook();
-                    renderScrollViewPlaceholders();
+        function updateViewModeUI() {
+            if (viewModeBtn) {
+                if (viewMode === 'flip') {
+                    viewModeBtn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M19 5v14H5V5h14m0-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg>';
                 } else {
-                    await renderFlipbook();
+                    viewModeBtn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M13 5h-2v14h2V5zm4 0h-2v14h2V5zM7 5H5v14h2V5z"/></svg>';
                 }
             }
         }
 
-        // Render Page Logic
-        async function renderPageInContainer(container, pageNum, scale = 1.3) {
-            if (container.querySelector('canvas')) return; // Already rendered
-            if (pageRenderingQueue.has(pageNum)) return; // Already rendering
+        async function handleResize() {
+            isMobile = window.innerWidth < 768;
+            let activeMode = viewMode;
+
+            document.body.className = activeMode === 'scroll' ? 'mode-scroll' : 'mode-flip';
+
+            if (activeMode === 'scroll') {
+                destroyFlipbook();
+                if (!scrollEl.hasChildNodes()) renderScrollViewPlaceholders();
+                scrollEl.style.display = 'flex';
+                flipbook.hide();
+                document.querySelectorAll('.side-arrow').forEach(el => el.style.display = 'none');
+            } else {
+                scrollEl.style.display = 'none';
+                flipbook.show();
+                document.querySelectorAll('.side-arrow').forEach(el => el.style.display = 'flex');
+                await renderFlipbook();
+            }
+        }
+
+        async function renderPageInContainer(container, pageNum, scale = 2.0) {
+            if (container.querySelector('canvas')) return;
+            if (pageRenderingQueue.has(pageNum)) return;
 
             pageRenderingQueue.add(pageNum);
             try {
                 const page = await pdfDoc.getPage(pageNum);
-                const viewport = page.getViewport({ scale: scale * zoomLevel });
+
+                // High Resolution Rendering
+                const pixelRatio = window.devicePixelRatio || 1;
+                const viewport = page.getViewport({ scale: scale * zoomLevel * pixelRatio });
+
                 const canvas = document.createElement('canvas');
                 const ctx = canvas.getContext('2d');
+
                 canvas.width = viewport.width;
                 canvas.height = viewport.height;
+
+                // CSS scaling to match logical pixels
+                canvas.style.width = '100%';
+                canvas.style.height = '100%';
+
+                // Bleed Trim
+                canvas.style.transform = 'scale(1.15)';
+                canvas.style.transformOrigin = 'center center';
 
                 container.innerHTML = '';
                 container.appendChild(canvas);
 
                 await page.render({ canvasContext: ctx, viewport }).promise;
-            } catch (e) {
-                console.error(`Error rendering page ${pageNum}`, e);
-            } finally {
-                pageRenderingQueue.delete(pageNum);
-            }
+            } catch (e) { console.error(e); }
+            finally { pageRenderingQueue.delete(pageNum); }
         }
 
-        // Scroll View (Mobile)
         function renderScrollViewPlaceholders() {
             scrollEl.innerHTML = '';
             for (let i = 1; i <= totalPages; i++) {
@@ -731,7 +757,8 @@
                 container.id = `page-${i}`;
                 container.dataset.page = i;
                 container.style.height = 'auto';
-                container.style.minHeight = '400px'; // Placeholder height
+                container.style.minHeight = '600px';
+                container.style.overflow = 'hidden';
                 scrollEl.appendChild(container);
                 scrollObserver.observe(container);
             }
@@ -741,24 +768,28 @@
             }, 100);
         }
 
-        // Turn.js Flipbook (Desktop)
         async function renderFlipbook() {
-            if (flipbook.data() && flipbook.data().turn) return;
+            if (flipbook.data() && flipbook.data().turn) {
+                const width = window.innerWidth * 0.95;
+                const height = window.innerHeight * 0.75;
+                flipbook.turn('size', width, height);
+                return;
+            }
 
             flipbook.empty();
 
-            // Create page placeholders
             for (let i = 1; i <= totalPages; i++) {
                 const pageDiv = $('<div class="page"></div>');
                 pageDiv.attr('data-page', i);
                 pageDiv.html('<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#666;">Loading...</div>');
+                // Shadow
+                pageDiv.append('<div class="page-shadow"></div>');
                 flipbook.append(pageDiv);
             }
 
-            // Initialize Turn.js
             flipbook.turn({
-                width: Math.min(922, window.innerWidth * 0.9),
-                height: Math.min(600, window.innerHeight * 0.6),
+                width: window.innerWidth * 0.95,
+                height: window.innerHeight * 0.75,
                 autoCenter: true,
                 display: 'double',
                 acceleration: true,
@@ -779,7 +810,6 @@
                 }
             });
 
-            // Add click-to-turn
             flipbook.on('click', function (e) {
                 const offset = flipbook.offset();
                 const x = e.pageX - offset.left;
@@ -787,43 +817,21 @@
                 else flipbook.turn('next');
             });
 
-            // Go to saved page
-            if (currentPage > 1) {
-                flipbook.turn('page', currentPage);
-            }
-
-            // Load initial pages
+            if (currentPage > 1) flipbook.turn('page', currentPage);
             loadNearbyPages(currentPage);
         }
 
         function loadNearbyPages(pageNum) {
-            const range = 2; // Load current + 2 neighbors
+            const range = 2;
             for (let i = Math.max(1, pageNum - range); i <= Math.min(totalPages, pageNum + range); i++) {
                 loadFlipbookPage(i);
             }
         }
 
         function loadFlipbookPage(pageNum) {
-            // Turn.js pages are 1-indexed elements inside #flipbook
-            // But Turn.js might rearrange DOM, so best to find by data attribute or class
-            // Actually Turn.js keeps order mostly, but let's use the element reference if possible.
-            // Or just query the container.
-
-            // Note: Turn.js wraps pages. We need to find the specific div we created.
-            // The safest way with Turn.js is to select by class/attribute inside the flipbook container
-            // However, Turn.js moves pages into wrappers.
-
-            // Let's try to find the element.
-            // In Turn.js, `flipbook.turn('pages')` returns count.
-            // We can't easily get the element by index via API.
-            // But we can assume the DOM structure or use internal mapping if needed.
-            // Simpler: Query for the .page div with data-page
-
-            // Wait, we didn't add data-page to the wrapper? We did: pageDiv.attr('data-page', i);
-
             const pageEl = document.querySelector(`#flipbook .page[data-page="${pageNum}"]`);
             if (pageEl) {
-                renderPageInContainer(pageEl, pageNum, 1.3);
+                renderPageInContainer(pageEl, pageNum, 2.0); // High quality
             }
         }
 
@@ -833,7 +841,6 @@
             }
         }
 
-        // Navigation
         function updateState(pageNum) {
             currentPage = pageNum;
             pageIndicator.textContent = `${pageNum} / ${totalPages}`;
@@ -845,28 +852,26 @@
             });
 
             const activeThumb = thumbScroll.querySelector('.thumb.active');
-            if (activeThumb) {
-                activeThumb.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-            }
+            if (activeThumb) activeThumb.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
         }
 
         function goToPage(pageNum) {
             pageNum = parseInt(pageNum);
             if (pageNum < 1 || pageNum > totalPages) return;
 
-            if (isMobile) {
+            if (viewMode === 'scroll') {
                 const target = document.getElementById(`page-${pageNum}`);
                 if (target) target.scrollIntoView({ behavior: 'smooth' });
+                updateState(pageNum);
             } else {
                 if (flipbook.data() && flipbook.data().turn) {
                     flipbook.turn('page', pageNum);
                 }
             }
-            updateState(pageNum);
         }
 
         function prevPage() {
-            if (isMobile) {
+            if (viewMode === 'scroll') {
                 if (currentPage > 1) goToPage(currentPage - 1);
             } else {
                 flipbook.turn('previous');
@@ -874,14 +879,13 @@
         }
 
         function nextPage() {
-            if (isMobile) {
+            if (viewMode === 'scroll') {
                 if (currentPage < totalPages) goToPage(currentPage + 1);
             } else {
                 flipbook.turn('next');
             }
         }
 
-        // Theme
         function setTheme(theme) {
             document.body.setAttribute('data-theme', theme);
             localStorage.setItem('theme', theme);
@@ -891,19 +895,14 @@
             themeMenu.classList.remove('active');
         }
 
-        // Zoom
         function adjustZoom(delta) {
             zoomLevel = Math.max(0.5, Math.min(2, zoomLevel + delta));
             flipbook.css('transform', `scale(${zoomLevel})`);
         }
 
-        // Utils
         function toggleFullScreen() {
-            if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen();
-            } else {
-                document.exitFullscreen();
-            }
+            if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+            else document.exitFullscreen();
         }
 
         function debounce(func, wait) {
@@ -914,7 +913,6 @@
             };
         }
 
-        // Start
         init();
     </script>
 </body>
